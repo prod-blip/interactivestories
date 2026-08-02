@@ -812,6 +812,146 @@ canvas {
   }
 }
 
+/* Phones and small tablets become wider than the normal mobile breakpoint in
+   landscape. Use the available height to select the compact game layout. */
+@media (orientation: landscape) and (max-height: 600px) {
+  .hud {
+    top: max(8px, env(safe-area-inset-top));
+    left: max(10px, env(safe-area-inset-left));
+    right: max(10px, env(safe-area-inset-right));
+  }
+
+  .hud__title {
+    max-width: 34vw;
+    font-size: clamp(17px, 4.5vh, 23px);
+    line-height: 1;
+  }
+
+  .hud__objective {
+    width: min(184px, 46vw);
+    gap: 7px;
+    padding: 5px 9px 5px 5px;
+  }
+
+  .hud__objective-compass {
+    width: 34px;
+    height: 34px;
+  }
+
+  .hud__objective-arrow { font-size: 22px; }
+  .hud__objective-kicker { font-size: 6px; }
+  .hud__objective-label { font-size: 12px; }
+  .hud__objective-distance { font-size: 8px; }
+
+  .has-touch-input .touch-controls__base {
+    left: max(12px, env(safe-area-inset-left));
+    bottom: max(12px, env(safe-area-inset-bottom));
+    width: 88px;
+    height: 88px;
+  }
+
+  .has-touch-input .touch-controls__knob {
+    width: 40px;
+    height: 40px;
+  }
+
+  .has-touch-input .hud__move-coach {
+    left: max(10px, env(safe-area-inset-left));
+    bottom: max(112px, calc(env(safe-area-inset-bottom) + 100px));
+  }
+
+  .has-touch-input .hud__move-coach-touch {
+    width: 170px;
+    padding: 9px 12px;
+  }
+
+  .hud__joystick-pointer {
+    left: 37px;
+    bottom: -39px;
+    font-size: 29px;
+  }
+
+  .story-intro__title-card {
+    gap: 7px;
+    padding: 12px max(18px, env(safe-area-inset-right)) 12px max(18px, env(safe-area-inset-left));
+  }
+
+  .story-intro__title-card h1 {
+    font-size: clamp(28px, 10vh, 44px);
+  }
+
+  .story-intro__title-card p {
+    font-size: clamp(13px, 4vh, 17px);
+  }
+
+  .story-intro__dialogue {
+    bottom: max(16px, calc(env(safe-area-inset-bottom) + 8px));
+    width: min(76vw, 620px);
+    padding: 10px 16px;
+    font-size: clamp(13px, 3.8vh, 17px);
+  }
+
+  .narrator-card {
+    padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+
+  .narrator-card__panel {
+    width: min(90vw, 760px);
+    max-height: calc(100dvh - 16px);
+    gap: 7px;
+    padding: 14px 24px;
+    overflow-y: auto;
+  }
+
+  .narrator-card__eyebrow { font-size: 9px; }
+  .narrator-card__text {
+    font-size: clamp(15px, 4.8vh, 20px);
+    line-height: 1.34;
+  }
+
+  .encounter-dialogue__panel {
+    bottom: max(8px, env(safe-area-inset-bottom));
+    width: min(82vw, 700px);
+    min-height: 0;
+    max-height: calc(100dvh - 16px);
+    padding: 11px 18px 10px;
+    overflow-y: auto;
+  }
+
+  .encounter-dialogue__speaker {
+    margin-bottom: 4px;
+    font-size: 10px;
+  }
+
+  .encounter-dialogue__text {
+    font-size: clamp(14px, 4.4vh, 19px);
+    line-height: 1.28;
+  }
+
+  .exploration-thought {
+    bottom: max(10px, env(safe-area-inset-bottom));
+    width: min(70vw, 560px);
+    padding: 9px 15px;
+  }
+
+  .story-ending {
+    padding: max(7px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(7px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+
+  .story-ending__card {
+    max-height: calc(100dvh - 14px);
+    gap: 6px;
+    padding: 12px 24px;
+    overflow-y: auto;
+  }
+
+  .story-ending__eyebrow { font-size: 12px; }
+  .story-ending h2 { font-size: clamp(24px, 7vh, 36px); }
+  .story-ending__moral { font-size: 14px; }
+  .story-ending strong { margin-top: 2px; font-size: 15px; }
+  .story-ending__restart { margin-top: 2px; padding: 8px 18px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hud__joystick-pointer {
     animation: none;

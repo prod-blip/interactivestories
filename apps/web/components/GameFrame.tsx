@@ -21,7 +21,9 @@ export function GameFrame({ title, storyHref, src }: GameFrameProps) {
     const settleTimers: number[] = [];
 
     const syncViewport = () => {
+      const width = viewport?.width ?? window.innerWidth;
       const height = viewport?.height ?? window.innerHeight;
+      root.style.setProperty('--play-viewport-width', `${Math.ceil(width)}px`);
       root.style.setProperty('--play-viewport-height', `${Math.ceil(height)}px`);
       frame.current?.contentWindow?.postMessage({ type: 'moonlit:viewport-resize' }, window.location.origin);
     };
@@ -44,6 +46,7 @@ export function GameFrame({ title, storyHref, src }: GameFrameProps) {
 
     return () => {
       root.classList.remove('is-playing');
+      root.style.removeProperty('--play-viewport-width');
       root.style.removeProperty('--play-viewport-height');
       settleTimers.forEach((timer) => window.clearTimeout(timer));
       window.removeEventListener('resize', settleViewport);
