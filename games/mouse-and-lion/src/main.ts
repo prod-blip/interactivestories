@@ -49,6 +49,19 @@ const appRoot = app;
 
 let game: Game | undefined;
 
+// Safari on iPad only enables Web Audio from a direct user gesture and may
+// suspend it again after fullscreen or an interruption. Retrying is safe: the
+// AudioDirector resumes the existing context without recreating its soundscape.
+const unlockGameAudio = () => game?.enableAudio();
+const handleHostViewportResize = (event: MessageEvent) => {
+  if (event.origin !== window.location.origin || event.data?.type !== 'moonlit:viewport-resize') return;
+  window.dispatchEvent(new Event('resize'));
+};
+window.addEventListener('pointerdown', unlockGameAudio, { passive: true });
+window.addEventListener('touchend', unlockGameAudio, { passive: true });
+window.addEventListener('keydown', unlockGameAudio);
+window.addEventListener('message', handleHostViewportResize);
+
 restartStoryButton?.addEventListener('click', () => window.location.reload());
 
 function setLoadingProgress(progress: number, stage: string): void {
@@ -297,5 +310,9 @@ void bootstrap().catch((error: unknown) => {
 });
 
 window.addEventListener('beforeunload', () => {
+  window.removeEventListener('pointerdown', unlockGameAudio);
+  window.removeEventListener('touchend', unlockGameAudio);
+  window.removeEventListener('keydown', unlockGameAudio);
+  window.removeEventListener('message', handleHostViewportResize);
   game?.dispose();
 });

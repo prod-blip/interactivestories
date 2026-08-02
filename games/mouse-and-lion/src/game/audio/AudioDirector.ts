@@ -26,8 +26,17 @@ export class AudioDirector {
   async start(): Promise<void> {
     if (this.disposed) return;
     if (!this.context) this.createAudioGraph();
-    if (!this.context || this.started) return;
-    await this.context.resume();
+    if (!this.context) return;
+
+    // iPadOS can create the context in a suspended/interrupted state and can
+    // suspend it again after fullscreen or an app interruption. Prime the
+    // output and resume directly from each user gesture before checking the
+    // one-time soundscape setup below.
+    if (this.context.state !== 'running') {
+      this.primeAudioOutput();
+      await this.context.resume();
+    }
+    if (this.started) return;
     this.started = true;
     this.startForestAmbience();
     this.scheduleMusicPhrase();
@@ -35,6 +44,15 @@ export class AudioDirector {
     void this.loadTrappedLionVoice();
     this.musicTimer = window.setInterval(() => this.scheduleMusicPhrase(), 15000);
     this.playChime([523.25, 659.25, 783.99], 0.025);
+  }
+
+  private primeAudioOutput(): void {
+    if (!this.context) return;
+    const buffer = this.context.createBuffer(1, 1, this.context.sampleRate);
+    const source = this.context.createBufferSource();
+    source.buffer = buffer;
+    source.connect(this.context.destination);
+    source.start();
   }
 
   update(delta: number, traveled: number, chewing: boolean): void {
