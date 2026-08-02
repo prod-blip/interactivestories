@@ -43,7 +43,6 @@ export function GameFrame({ title, storyHref, src }: GameFrameProps) {
           allow="autoplay; fullscreen"
         />
       </div>
-      <p className="play-tip">Move with arrow keys or WASD. On a phone or tablet, use the on-screen controls.</p>
     </main>
   );
 }
