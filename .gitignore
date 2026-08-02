@@ -1,0 +1,11 @@
+# Dependencies — root and every workspace
+node_modules/
+**/node_modules/
+.next/
+out/
+dist/
+apps/web/public/games/
+.DS_Store
+*.log
+.env*
+!.env.example

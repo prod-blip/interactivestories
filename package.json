@@ -1,0 +1,23 @@
+{
+  "name": "moonlit-stories",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "games/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=@moonlit/web",
+    "dev:game": "npm run dev --workspace=@moonlit/mouse-and-lion",
+    "build:games": "npm run build --workspace=@moonlit/mouse-and-lion",
+    "build:web": "npm run build --workspace=@moonlit/web",
+    "build": "npm run build:games && npm run build:web",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2"
+  }
+}
