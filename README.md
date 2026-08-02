@@ -25,3 +25,13 @@ npm run build
 ```
 
 The complete static website is generated in `apps/web/out`.
+
+## Vercel
+
+Import the repository with the **Root Directory left blank** so Vercel builds
+from the monorepo root. The committed `vercel.json` installs the root npm
+workspace, builds the games before the website, and deploys `apps/web/out`.
+
+If the project was previously configured with `apps/web` as its Root Directory,
+change it under **Settings → Build and Deployment → Root Directory**, then
+redeploy without the previous build cache.
