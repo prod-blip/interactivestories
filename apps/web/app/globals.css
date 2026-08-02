@@ -61,7 +61,6 @@ button { color: inherit; font: inherit; }
 nav { display: flex; align-items: center; gap: 32px; color: var(--ink-soft); font-size: 13px; letter-spacing: .035em; }
 nav a { transition: color .2s ease; }
 nav a:hover { color: var(--cream); }
-.nav-note { padding: 9px 15px; border: 1px solid var(--line); border-radius: 999px; }
 
 .hero {
   position: relative;

@@ -110,7 +110,8 @@ canvas {
   right: 0;
   display: flex;
   align-items: center;
-  min-width: 205px;
+  width: min(220px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
   gap: 11px;
   padding: 9px 14px 9px 9px;
   border: 1px solid rgba(232, 199, 106, 0.4);
@@ -118,6 +119,7 @@ canvas {
   background: linear-gradient(145deg, rgba(8, 14, 24, 0.91), rgba(14, 25, 27, 0.82));
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.32), inset 0 1px rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(12px);
+  overflow: hidden;
   opacity: 1;
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
@@ -157,11 +159,15 @@ canvas {
 
 .hud__objective-kicker {
   margin-bottom: 3px;
+  padding-top: 1px;
+  overflow: visible;
   color: rgba(209, 211, 194, 0.7);
   font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.15em;
+  line-height: 1.35;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .hud__objective-label {
@@ -187,6 +193,7 @@ canvas {
   left: 50%;
   bottom: max(34px, calc(env(safe-area-inset-bottom) + 18px));
   z-index: 92;
+  max-width: calc(100vw - 32px);
   pointer-events: none;
   opacity: 1;
   transform: translate(-50%, 0);
@@ -199,7 +206,7 @@ canvas {
 }
 
 .hud__move-coach-desktop {
-  min-width: 240px;
+  width: min(240px, calc(100vw - 32px));
   display: grid;
   justify-items: center;
   padding: 14px 22px 13px;
@@ -284,7 +291,7 @@ canvas {
 
 .has-touch-input .hud__move-coach-touch {
   position: relative;
-  width: 180px;
+  width: min(180px, calc(100vw - 32px));
   display: block;
   padding: 12px 15px;
   border: 1px solid rgba(255, 230, 153, 0.32);
@@ -698,8 +705,8 @@ canvas {
   }
 
   .hud__objective {
-    min-width: 174px;
-    max-width: 49vw;
+    width: min(184px, calc(100vw - 32px));
+    max-width: calc(100vw - 32px);
     gap: 7px;
     padding: 6px 9px 6px 6px;
   }
