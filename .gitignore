@@ -5,6 +5,11 @@ node_modules/
 out/
 dist/
 apps/web/public/games/
+
+# Local agent tooling and downloaded skills
+.agents/
+**/.agents/
+
 .DS_Store
 *.log
 .env*
