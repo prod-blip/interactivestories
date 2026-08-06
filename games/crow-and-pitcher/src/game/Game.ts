@@ -419,7 +419,7 @@ export class Game {
     });
     this.cameraMode = 'pebbles';
     this.hud.showThought('Crow', storyScenes.pebbleDiscovery[0].text, 3600);
-    await new Promise<void>((resolve) => window.setTimeout(resolve, 1200));
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 3600));
     if (this.disposed) return;
     this.startPebbleGameplay();
   }

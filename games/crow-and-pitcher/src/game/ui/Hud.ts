@@ -89,11 +89,13 @@ export class Hud {
   }
 
   showThought(speaker: string, text: string, duration = 3200): void {
-    clearTimeout(this.thoughtTimer);
+    this.hideThought();
+    clearTimeout(this.hintTimer);
+    this.hint.classList.remove('is-visible');
     this.thoughtSpeaker.textContent = speaker;
     this.thoughtText.textContent = `“${text}”`;
     this.thought.classList.add('is-visible');
-    this.thoughtTimer = window.setTimeout(() => this.thought.classList.remove('is-visible'), duration);
+    this.thoughtTimer = window.setTimeout(() => this.hideThought(), duration);
   }
 
   setCounter(collected: number, total: number, carrying = false): void {
@@ -160,6 +162,7 @@ export class Hud {
 
   private async runDialogue(lines: readonly DialogueLine[], onLine?: (line: DialogueLine, index: number) => void): Promise<void> {
     if (this.disposed || lines.length === 0) return;
+    this.hideThought();
     this.dialogue.classList.add('is-visible');
     for (const [index, line] of lines.entries()) {
       if (this.disposed) return;
@@ -179,6 +182,7 @@ export class Hud {
 
   private async runOpeningNarration(lines: readonly DialogueLine[]): Promise<void> {
     if (this.disposed || lines.length === 0) return;
+    this.hideThought();
     this.dialogue.classList.add('is-opening-narration', 'is-visible');
     this.dialogue.dataset.speaker = 'narrator';
     this.dialogueSpeaker.textContent = 'Narrator';
@@ -203,6 +207,11 @@ export class Hud {
 
     this.dialogue.classList.remove('is-visible', 'is-opening-narration');
     await new Promise<void>((resolve) => window.setTimeout(resolve, 380));
+  }
+
+  private hideThought(): void {
+    clearTimeout(this.thoughtTimer);
+    this.thought.classList.remove('is-visible');
   }
 
   private waitForAdvanceOrDelay(duration: number): Promise<void> {
