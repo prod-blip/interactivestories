@@ -7,10 +7,12 @@ const WATER_BOTTOM = 0.18;
 const WATER_START = 1.15;
 const WATER_END = 2.45;
 const WATER_SURFACE_MAX_RADIUS = 0.41;
+const PEBBLE_DROP_RADIUS = 2;
 
 export class Pitcher {
   readonly group = new THREE.Group();
   readonly interactionPosition = new THREE.Vector3();
+  readonly pebbleDropPosition = new THREE.Vector3();
   readonly rimHeight = 2.82 * PITCHER_SCALE;
   private readonly water: THREE.Mesh;
   private readonly waterMaterial: THREE.MeshBasicMaterial;
@@ -96,6 +98,13 @@ export class Pitcher {
     this.group.position.copy(position);
     this.group.scale.setScalar(PITCHER_SCALE);
     this.interactionPosition.copy(position).add(new THREE.Vector3(0, 0, 2.05 * PITCHER_SCALE));
+    this.pebbleDropPosition.copy(position);
+  }
+
+  canAcceptPebbleFrom(position: THREE.Vector3): boolean {
+    const dx = position.x - this.pebbleDropPosition.x;
+    const dz = position.z - this.pebbleDropPosition.z;
+    return dx * dx + dz * dz <= PEBBLE_DROP_RADIUS * PEBBLE_DROP_RADIUS;
   }
 
   addPebble(pebble: THREE.Object3D, count: number, total: number): void {

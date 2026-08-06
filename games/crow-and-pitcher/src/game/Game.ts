@@ -477,12 +477,12 @@ export class Game {
       this.setPhase('carrying');
       this.audio.playPickup();
       this.hud.setObjective('Return to the pitcher', 'Pebble in the crow’s beak');
-      this.hud.showHint('Carry the pebble back to the pitcher.');
+      this.hud.showHint('Approach the pitcher from any side to drop the pebble.');
       this.hud.setCounter(this.droppedCount, this.pebbles.length, true);
       return;
     }
 
-    if (!this.carriedPebble || this.crow.group.position.distanceTo(this.pitcher.interactionPosition) > 1.5) return;
+    if (!this.carriedPebble || !this.pitcher.canAcceptPebbleFrom(this.crow.group.position)) return;
     const pebbleMesh = this.crow.releaseCarried();
     this.droppedCount += 1;
     if (pebbleMesh) this.pitcher.addPebble(pebbleMesh, this.droppedCount, this.pebbles.length);
@@ -578,7 +578,7 @@ export class Game {
     const target = flightPhase
       ? this.pitcher.interactionPosition
       : this.phase === 'carrying'
-        ? this.pitcher.interactionPosition
+        ? this.pitcher.pebbleDropPosition
         : this.closestAvailablePebble()?.group.position;
     if (!target) return;
 
