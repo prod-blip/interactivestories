@@ -295,7 +295,7 @@ canvas { width: 100%; height: 100%; }
     top: max(10px, var(--story-safe-top, 0px));
     left: max(10px, var(--story-safe-left, 0px));
     min-width: 0;
-    max-width: min(230px, 60vw);
+    max-width: min(210px, 56vw);
     gap: 7px;
     padding: 6px 10px 6px 6px;
     border-radius: 12px;
@@ -304,7 +304,16 @@ canvas { width: 100%; height: 100%; }
   .hud__compass-ring { inset: 4px; }
   .hud__compass-arrow { font-size: 20px; }
   .hud__objective-kicker { margin-bottom: 2px; font-size: 7px; }
-  .hud__objective-label { font-size: 11px; }
+  .hud__objective-label {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 11px;
+    line-height: 1.15;
+    text-overflow: clip;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
   .hud__objective-distance { min-height: 8px; margin-top: 2px; font-size: 8px; }
   .hud__counter {
     top: max(10px, var(--story-safe-top, 0px));
@@ -315,13 +324,13 @@ canvas { width: 100%; height: 100%; }
     font-size: 10px;
   }
   .hud__counter small { display: none; }
-  .story-dialogue__panel { bottom: max(150px, calc(env(safe-area-inset-bottom) + 132px)); }
+  .story-dialogue__panel { bottom: max(12px, calc(env(safe-area-inset-bottom) + 8px)); }
   .crow-thought { bottom: max(150px, calc(env(safe-area-inset-bottom) + 132px)); }
   .hud__hint { bottom: max(150px, calc(var(--story-safe-bottom, 0px) + 132px)); }
 }
 
 @media (orientation: portrait) {
-  .hud__objective { min-width: 0; max-width: min(230px, 60vw); }
+  .hud__objective { min-width: 0; max-width: min(210px, 56vw); }
   .story-dialogue__panel { min-height: 132px; padding: 18px 20px 16px; }
   .story-dialogue__text { font-size: clamp(16px, 4.8vw, 21px); }
   .crow-thought { min-height: 132px; padding: 18px 20px 16px; }
