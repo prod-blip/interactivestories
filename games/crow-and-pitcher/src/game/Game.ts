@@ -332,12 +332,10 @@ export class Game {
     this.cameraMode = 'flight';
     this.controlsEnabled = true;
     this.input.setEnabled(true);
-    this.input.setActionLabel('Boost');
-    this.input.setActionVisible(true);
+    this.input.setActionVisible(false);
     this.hud.setObjectiveVisible(true);
     this.hud.setObjective('Guide the crow towards the garden wall', 'Find the pitcher');
     this.hud.showObjective('Guide the crow towards the garden wall');
-    this.hud.showHint('Follow the compass.');
   }
 
   private updateOpenFlight(delta: number): void {
@@ -367,7 +365,6 @@ export class Game {
     }
     if (this.wrongWayTime > 10 && this.wrongWayTime - delta <= 10) {
       this.hud.showThought('Crow', 'I think I should look near the garden wall.');
-      this.hud.showHint('The compass is glowing a little brighter.');
     }
     if (this.phaseElapsed > 2.5) {
       const nudgeStrength = this.wrongWayTime > 10 ? 0.72 : 0.12;
@@ -568,8 +565,7 @@ export class Game {
     this.controlsEnabled = true;
     this.crow.group.position.copy(this.pitcher.interactionPosition).add(new THREE.Vector3(0, 1.75, 1));
     this.input.setEnabled(true);
-    this.input.setActionLabel('Boost');
-    this.input.setActionVisible(true);
+    this.input.setActionVisible(false);
     this.hud.setObjective('Explore the quiet countryside', 'Free explore');
     this.hud.showObjective('Fly wherever you would like.');
     this.hud.updateCompass(0, -1, false);
