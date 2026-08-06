@@ -68,9 +68,6 @@ export function createStoryHost(
       post({ ...runtimeEnvelope(), type: 'moonlit:connect' });
     },
     syncViewport() {
-      // Reconnect while syncing so a game that attached its listener after the
-      // iframe load event can replay its latest lifecycle snapshot.
-      post({ ...runtimeEnvelope(), type: 'moonlit:connect' });
       post({ ...runtimeEnvelope(), type: 'moonlit:viewport', viewport: detectStoryViewport() });
     },
     pause() {

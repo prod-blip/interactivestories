@@ -30,6 +30,7 @@ export function createStoryRuntime(storyId: string, story: MoonlitStoryAdapter):
   let lastStage = 'Opening the story';
   let currentState: 'loading' | 'ready' | 'completed' | 'error' = 'loading';
   let lastError = '';
+  let applyingViewport = false;
 
   const post = (message: StoryToHostMessage) => {
     if (window.parent === window) return;
@@ -37,9 +38,15 @@ export function createStoryRuntime(storyId: string, story: MoonlitStoryAdapter):
   };
 
   const applyViewport = (viewport: StoryViewport) => {
-    applyStoryViewport(viewport);
-    story.onViewportChange?.(viewport);
-    window.dispatchEvent(new Event('resize'));
+    if (applyingViewport) return;
+    applyingViewport = true;
+    try {
+      applyStoryViewport(viewport);
+      story.onViewportChange?.(viewport);
+      window.dispatchEvent(new Event('resize'));
+    } finally {
+      applyingViewport = false;
+    }
   };
 
   const postSnapshot = () => {
@@ -82,7 +89,6 @@ export function createStoryRuntime(storyId: string, story: MoonlitStoryAdapter):
         break;
       case 'moonlit:viewport':
         applyViewport(event.data.viewport);
-        postSnapshot();
         break;
       default:
         break;
