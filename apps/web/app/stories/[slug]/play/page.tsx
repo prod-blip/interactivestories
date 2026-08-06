@@ -10,5 +10,12 @@ export default async function PlayPage({ params }: { params: Promise<{ slug: str
   const story = getStory((await params).slug);
   if (!story || !story.playable) notFound();
 
-  return <GameFrame title={story.title} storyHref={`/stories/${story.slug}`} src={story.entry} />;
+  return (
+    <GameFrame
+      title={story.title}
+      storyHref={`/stories/${story.slug}`}
+      src={story.entry}
+      capabilities={story.capabilities}
+    />
+  );
 }

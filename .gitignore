@@ -5,6 +5,12 @@ node_modules/
 out/
 dist/
 apps/web/public/games/
+games/*/public/shared/
+
+# Local Crow animation sandbox
+games/crow-and-pitcher/crow-lab.html
+games/crow-and-pitcher/src/crow-lab.ts
+games/crow-and-pitcher/src/crow-lab.css
 
 # Local agent tooling and downloaded skills
 .agents/

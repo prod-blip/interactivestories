@@ -53,6 +53,9 @@ export class Game {
   private readonly audio = new AudioDirector();
   private readonly lighting: ReturnType<typeof addDefaultLighting>;
   private animationId = 0;
+  private hasStarted = false;
+  private isRunning = false;
+  private disposed = false;
   private distance = 0;
   private controlsEnabled = false;
   private movementCoachActive = false;
@@ -186,8 +189,38 @@ export class Game {
   }
 
   start(): void {
+    if (this.hasStarted) {
+      this.resume();
+      return;
+    }
+    this.hasStarted = true;
+    this.isRunning = true;
     this.clock.start();
     this.tick();
+  }
+
+  pause(): void {
+    if (!this.isRunning) return;
+    this.isRunning = false;
+    cancelAnimationFrame(this.animationId);
+    this.clock.stop();
+    void this.audio.pause();
+  }
+
+  resume(): void {
+    if (!this.hasStarted || this.isRunning || this.disposed) return;
+    this.isRunning = true;
+    this.clock.start();
+    void this.audio.resume();
+    this.tick();
+  }
+
+  restart(): void {
+    window.location.reload();
+  }
+
+  setMuted(muted: boolean): void {
+    this.audio.setMuted(muted);
   }
 
   beginStoryIntro(): void {
@@ -357,6 +390,8 @@ export class Game {
   }
 
   dispose(): void {
+    this.disposed = true;
+    this.isRunning = false;
     cancelAnimationFrame(this.animationId);
     this.input.dispose();
     this.hud.dispose();

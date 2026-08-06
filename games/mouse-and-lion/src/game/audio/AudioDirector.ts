@@ -14,6 +14,7 @@ export class AudioDirector {
   private musicPhraseEndsAt = 0;
   private started = false;
   private disposed = false;
+  private muted = false;
   private lionSleeping = true;
   private lionWalking = false;
   private lionWalkRemaining = 0;
@@ -44,6 +45,21 @@ export class AudioDirector {
     void this.loadTrappedLionVoice();
     this.musicTimer = window.setInterval(() => this.scheduleMusicPhrase(), 15000);
     this.playChime([523.25, 659.25, 783.99], 0.025);
+  }
+
+  async pause(): Promise<void> {
+    if (this.context?.state === 'running') await this.context.suspend();
+  }
+
+  async resume(): Promise<void> {
+    if (this.context && this.context.state !== 'running') await this.context.resume();
+  }
+
+  setMuted(muted: boolean): void {
+    this.muted = muted;
+    if (!this.master || !this.context) return;
+    this.master.gain.cancelScheduledValues(this.context.currentTime);
+    this.master.gain.setTargetAtTime(muted ? 0 : 0.72, this.context.currentTime, 0.04);
   }
 
   private primeAudioOutput(): void {
@@ -232,7 +248,7 @@ export class AudioDirector {
     this.ambienceBus = this.context.createGain();
     this.musicBus = this.context.createGain();
     this.effectsBus = this.context.createGain();
-    this.master.gain.value = 0.72;
+    this.master.gain.value = this.muted ? 0 : 0.72;
     this.ambienceBus.gain.value = 0.62;
     this.musicBus.gain.value = 0.56;
     this.effectsBus.gain.value = 0.82;

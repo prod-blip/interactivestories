@@ -1,0 +1,25 @@
+{
+  "name": "@moonlit/crow-and-pitcher",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "sync:shared": "node ../../packages/story-assets/scripts/sync-to-game.mjs",
+    "predev": "npm run sync:shared",
+    "dev": "vite",
+    "lab": "vite --open /games/crow-and-pitcher/crow-lab.html",
+    "prebuild": "npm run sync:shared",
+    "build": "tsc && vite build",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@moonlit/story-assets": "*",
+    "@moonlit/story-runtime": "*",
+    "@types/three": "^0.185.1",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "vite": "^8.1.1"
+  }
+}

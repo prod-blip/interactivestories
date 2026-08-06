@@ -18,8 +18,6 @@ import { StoryArtwork } from '@/components/StoryArtwork';
 import { stories } from '@/lib/stories';
 
 export default function Home() {
-  const featured = stories[0];
-
   return (
     <main>
       <section className="hero">
@@ -72,29 +70,33 @@ export default function Home() {
               <p className="eyebrow">The story shelf</p>
               <h2>Choose tonight’s little journey.</h2>
             </div>
-            <p>Our library is beginning with one lovingly made tale. More quiet adventures will join it over time.</p>
+            <p>Each tale is a small, lovingly made world for reading, wondering, and exploring together.</p>
           </div>
 
-          <article className="featured-story">
-            <Link className="story-art-link" href={`/stories/${featured.slug}`} aria-label={`Open ${featured.title}`}>
-              <StoryArtwork />
-              <span className="story-status"><span /> Ready to play</span>
-            </Link>
-            <div className="story-copy">
-              <p className="eyebrow">{featured.eyebrow}</p>
-              <h3>{featured.title}</h3>
-              <p className="story-summary">{featured.summary}</p>
-              <div className="story-meta">
-                <span><Clock3 size={15} /> {featured.duration}</span>
-                <span><BookOpenText size={15} /> {featured.ageRange}</span>
-                <span><MousePointer2 size={15} /> Read + explore</span>
-              </div>
-              <blockquote>“{featured.moral}”</blockquote>
-              <Link className="secondary-button" href={`/stories/${featured.slug}`}>
-                Meet the story <ArrowRight size={17} />
-              </Link>
-            </div>
-          </article>
+          <div className="story-list">
+            {stories.map((story) => (
+              <article className="featured-story" key={story.slug}>
+                <Link className="story-art-link" href={`/stories/${story.slug}`} aria-label={`Open ${story.title}`}>
+                  <StoryArtwork variant={story.slug === 'crow-and-pitcher' ? 'crow-and-pitcher' : 'mouse-and-lion'} />
+                  <span className="story-status"><span /> Ready to play</span>
+                </Link>
+                <div className="story-copy">
+                  <p className="eyebrow">{story.eyebrow}</p>
+                  <h3>{story.title}</h3>
+                  <p className="story-summary">{story.summary}</p>
+                  <div className="story-meta">
+                    <span><Clock3 size={15} /> {story.duration}</span>
+                    <span><BookOpenText size={15} /> {story.ageRange}</span>
+                    <span><MousePointer2 size={15} /> {story.participation}</span>
+                  </div>
+                  <blockquote>“{story.moral}”</blockquote>
+                  <Link className="secondary-button" href={`/stories/${story.slug}`}>
+                    Meet the story <ArrowRight size={17} />
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 

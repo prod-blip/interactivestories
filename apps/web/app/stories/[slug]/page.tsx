@@ -29,7 +29,7 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
         <Link href="/#stories"><ArrowLeft size={16} /> Back to the story shelf</Link>
       </div>
       <section className="shell detail-hero">
-        <div className="detail-art"><StoryArtwork compact /></div>
+        <div className="detail-art"><StoryArtwork compact variant={story.slug === 'crow-and-pitcher' ? 'crow-and-pitcher' : 'mouse-and-lion'} /></div>
         <div className="detail-copy">
           <p className="eyebrow">{story.eyebrow}</p>
           <h1>{story.title}</h1>
@@ -49,9 +49,13 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
           <h2>A story to share, not rush.</h2>
         </div>
         <div className="parent-cards">
-          <article><span>01</span><h3>Read together</h3><p>The story pauses naturally so you can read each passage aloud.</p></article>
-          <article><span>02</span><h3>Explore gently</h3><p>Help the little mouse move through the forest using keys or touch.</p></article>
-          <article><span>03</span><h3>Talk about kindness</h3><p>Ask what each character might feel and what your child would do.</p></article>
+          {story.guidance.map((item, index) => (
+            <article key={item.title}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <h3>{item.title}</h3>
+              <p>{item.text}</p>
+            </article>
+          ))}
         </div>
       </section>
       <section className="shell moral-card">

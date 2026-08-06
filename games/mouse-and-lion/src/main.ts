@@ -1,4 +1,5 @@
 import './style.css';
+import { createStoryRuntime, type StoryRuntime } from '@moonlit/story-runtime';
 import { Game } from './game/Game';
 
 const app = document.querySelector<HTMLDivElement>('#app');
@@ -48,19 +49,15 @@ if (!app) throw new Error('Missing #app root element');
 const appRoot = app;
 
 let game: Game | undefined;
+let runtime: StoryRuntime | undefined;
 
 // Safari on iPad only enables Web Audio from a direct user gesture and may
 // suspend it again after fullscreen or an interruption. Retrying is safe: the
 // AudioDirector resumes the existing context without recreating its soundscape.
 const unlockGameAudio = () => game?.enableAudio();
-const handleHostViewportResize = (event: MessageEvent) => {
-  if (event.origin !== window.location.origin || event.data?.type !== 'moonlit:viewport-resize') return;
-  window.dispatchEvent(new Event('resize'));
-};
 window.addEventListener('pointerdown', unlockGameAudio, { passive: true });
 window.addEventListener('touchend', unlockGameAudio, { passive: true });
 window.addEventListener('keydown', unlockGameAudio);
-window.addEventListener('message', handleHostViewportResize);
 
 restartStoryButton?.addEventListener('click', () => window.location.reload());
 
@@ -226,6 +223,7 @@ async function playTrappedLionEncounter(activeGame: Game): Promise<void> {
     'At last, the final rope broke and the net tumbled onto the ground. The lion was free! From that day on, he remembered that even the smallest friend can do something wonderfully brave.',
   );
   activeGame.endStory();
+  runtime?.markCompleted();
   storyEnding?.classList.add('is-visible');
   activeGame.playEndingSound();
   await delay(900);
@@ -266,6 +264,15 @@ async function bootstrap(): Promise<void> {
   await nextFrame();
 
   setLoadingProgress(0.18, 'Preparing the trail');
+  runtime = createStoryRuntime('mouse-and-lion', {
+    pause: () => game?.pause(),
+    resume: () => game?.resume(),
+    restart: () => {
+      if (game) game.restart();
+      else window.location.reload();
+    },
+    setMuted: (muted) => game?.setMuted(muted),
+  });
   game = new Game(appRoot);
   game.setLionEncounterHandler(() => {
     if (game) void playLionEncounter(game);
@@ -284,6 +291,7 @@ async function bootstrap(): Promise<void> {
   setLoadingProgress(0.35, 'Building the night world');
   await game.prepare((progress, stage) => {
     setLoadingProgress(0.35 + progress * 0.58, stage);
+    runtime?.reportLoading(0.35 + progress * 0.58, stage);
   });
 
   setLoadingProgress(0.95, 'Almost there');
@@ -298,6 +306,7 @@ async function bootstrap(): Promise<void> {
   await new Promise((resolve) => window.setTimeout(resolve, 420));
   game.beginStoryIntro();
   game.start();
+  runtime?.markReady();
   loader?.classList.add('is-complete');
   window.setTimeout(() => loader?.remove(), 700);
   await playStoryIntro(game);
@@ -305,6 +314,7 @@ async function bootstrap(): Promise<void> {
 
 void bootstrap().catch((error: unknown) => {
   console.error(error);
+  runtime?.reportError(error);
   setLoadingProgress(1, 'Unable to enter the forest');
   loader?.classList.add('has-error');
 });
@@ -313,6 +323,6 @@ window.addEventListener('beforeunload', () => {
   window.removeEventListener('pointerdown', unlockGameAudio);
   window.removeEventListener('touchend', unlockGameAudio);
   window.removeEventListener('keydown', unlockGameAudio);
-  window.removeEventListener('message', handleHostViewportResize);
+  runtime?.dispose();
   game?.dispose();
 });

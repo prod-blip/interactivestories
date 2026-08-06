@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@moonlit/story-runtime": "*",
     "lucide-react": "latest",
     "next": "latest",
     "react": "latest",

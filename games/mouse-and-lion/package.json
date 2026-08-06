@@ -4,7 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "sync:shared": "node ../../packages/story-assets/scripts/sync-to-game.mjs",
+    "predev": "npm run sync:shared",
     "dev": "vite",
+    "prebuild": "npm run sync:shared",
     "build": "tsc && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
@@ -13,6 +16,8 @@
     "vite": "^8.1.1"
   },
   "dependencies": {
+    "@moonlit/story-assets": "*",
+    "@moonlit/story-runtime": "*",
     "@types/three": "^0.185.1",
     "three": "^0.185.1"
   }
