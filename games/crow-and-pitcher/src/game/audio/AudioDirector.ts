@@ -107,9 +107,9 @@ export class AudioDirector {
         this.loadBuffer(`${base}audio/bird-flap-loop.wav`),
         this.loadBuffer(`${base}audio/splash-recording-2.wav`),
         this.loadBuffer(`${base}audio/crow-drinking-water.wav`),
-        this.loadBuffer(`${base}audio/chirp-1.wav`),
-        this.loadBuffer(`${base}audio/chirp-2.wav`),
-        this.loadBuffer(`${base}audio/chirp-3.wav`),
+        this.loadBuffer(`${base}shared/audio/birds/chirp-1.wav`),
+        this.loadBuffer(`${base}shared/audio/birds/chirp-2.wav`),
+        this.loadBuffer(`${base}shared/audio/birds/chirp-3.wav`),
       ]);
       if (!this.context || !this.master) return;
       this.wingBuffer = wingLoop;

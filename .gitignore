@@ -12,6 +12,9 @@ games/crow-and-pitcher/crow-lab.html
 games/crow-and-pitcher/src/crow-lab.ts
 games/crow-and-pitcher/src/crow-lab.css
 
+# Local Tortoise and Rabbit character sandbox
+games/tortoise-and-rabbit/character-sandbox/
+
 # Local agent tooling and downloaded skills
 .agents/
 **/.agents/

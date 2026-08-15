@@ -29,7 +29,7 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
         <Link href="/#stories"><ArrowLeft size={16} /> Back to the story shelf</Link>
       </div>
       <section className="shell detail-hero">
-        <div className="detail-art"><StoryArtwork compact variant={story.slug === 'crow-and-pitcher' ? 'crow-and-pitcher' : 'mouse-and-lion'} /></div>
+        <div className="detail-art"><StoryArtwork compact variant={story.slug === 'crow-and-pitcher' ? 'crow-and-pitcher' : story.slug === 'tortoise-and-rabbit' ? 'tortoise-and-rabbit' : 'mouse-and-lion'} /></div>
         <div className="detail-copy">
           <p className="eyebrow">{story.eyebrow}</p>
           <h1>{story.title}</h1>

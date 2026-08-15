@@ -11,7 +11,8 @@
     "dev": "npm run dev --workspace=@moonlit/web",
     "dev:game": "npm run dev --workspace=@moonlit/mouse-and-lion",
     "dev:crow-and-pitcher": "npm run dev --workspace=@moonlit/crow-and-pitcher",
-    "build:games": "npm run build --workspace=@moonlit/mouse-and-lion && npm run build --workspace=@moonlit/crow-and-pitcher",
+    "dev:tortoise-and-rabbit": "npm run dev --workspace=@moonlit/tortoise-and-rabbit",
+    "build:games": "npm run build --workspace=@moonlit/mouse-and-lion && npm run build --workspace=@moonlit/crow-and-pitcher && npm run build --workspace=@moonlit/tortoise-and-rabbit",
     "build:web": "npm run build --workspace=@moonlit/web",
     "build": "npm run build:games && npm run build:web",
     "typecheck": "npm run typecheck --workspaces --if-present"

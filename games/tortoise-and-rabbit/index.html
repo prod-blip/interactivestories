@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="./shared/icons/moonlit-mark.svg" />
+    <title>The Tortoise and the Rabbit</title>
+  </head>
+  <body>
+    <main id="app" aria-label="A bright, endless storybook forest"></main>
+    <div id="loader" class="loader" role="status" aria-live="polite">
+      <div class="loader__leaf" aria-hidden="true">◆</div>
+      <h1>THE TORTOISE AND THE RABBIT</h1>
+      <p>Growing the forest</p>
+      <div class="loader__track"><span></span></div>
+    </div>
+    <div id="story-intro" class="story-intro" aria-live="polite">
+      <div class="story-intro__title-card">
+        <h1>THE TORTOISE AND THE RABBIT</h1>
+        <p>A timeless tale of patience and perseverance.</p>
+      </div>
+    </div>
+    <div id="narrator-card" class="narrator-card" role="dialog" aria-modal="true" aria-live="polite">
+      <div class="narrator-card__panel">
+        <span class="narrator-card__eyebrow" data-speaker>Narrator</span>
+        <p class="narrator-card__text">Once upon a time in a sunny forest, there lived a speedy rabbit and a slow but steady tortoise.</p>
+      </div>
+    </div>
+    <div id="objective-popup" class="objective-popup" role="status" aria-live="polite">
+      Guide the tortoise along the trail
+    </div>
+    <div id="gameplay-bubble" class="gameplay-bubble" role="status" aria-live="polite">
+      <strong>Tortoise</strong>
+      <span></span>
+    </div>
+    <div id="race-guide" class="race-guide" role="status" aria-live="polite">
+      <div class="race-guide__compass" aria-hidden="true">
+        <span class="race-guide__ring"></span>
+        <span class="race-guide__arrow">↑</span>
+      </div>
+      <div class="race-guide__copy">
+        <small>Follow the trail</small>
+        <strong>Next checkpoint</strong>
+        <span data-guide-distance></span>
+      </div>
+    </div>
+    <div id="race-controls" class="race-controls" aria-label="Race controls">
+      <div class="race-controls__pad">
+        <button class="race-controls__steer" type="button" data-move="left" aria-label="Move the tortoise left">
+          <span aria-hidden="true">◀</span>
+        </button>
+        <button class="race-controls__wheel" type="button" data-move="forward" aria-label="Hold to move the tortoise forward">
+          <span aria-hidden="true">▲</span>
+        </button>
+        <button class="race-controls__steer" type="button" data-move="right" aria-label="Move the tortoise right">
+          <span aria-hidden="true">▶</span>
+        </button>
+      </div>
+      <small class="race-controls__touch-hint">Hold forward · steer left or right</small>
+    </div>
+    <div id="scene-transition" class="scene-transition" aria-hidden="true"></div>
+    <div id="story-ending" class="story-ending" role="dialog" aria-modal="true" aria-labelledby="ending-title" aria-live="polite">
+      <div class="story-ending__ornament" aria-hidden="true">◆</div>
+      <div class="story-ending__card">
+        <p class="story-ending__eyebrow">The race is won</p>
+        <h2 id="ending-title"><span>SLOW AND STEADY</span><span>WINS THE RACE</span></h2>
+        <div class="story-ending__divider" aria-hidden="true"><span></span><b>◆</b><span></span></div>
+        <p class="story-ending__moral">Keep going, stay patient and never give up.</p>
+        <div class="story-ending__actions">
+          <button type="button" data-action="restart">Play Again</button>
+          <button type="button" data-action="menu">Main Menu</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

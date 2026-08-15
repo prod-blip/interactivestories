@@ -73,6 +73,31 @@ export const stories: Story[] = [
       { title: 'Notice the idea', text: 'Watch the water rise and talk about how small actions can add up.' },
     ],
   },
+  {
+    slug: 'tortoise-and-rabbit',
+    title: 'The Tortoise and the Rabbit',
+    eyebrow: 'A steady woodland race',
+    summary: 'A patient tortoise shows that steady steps can carry us farther than proud promises.',
+    description:
+      'Join a bright forest race, guide the tortoise along the winding trail, and discover what happens when the speedy rabbit stops to nap.',
+    moral: 'Slow and steady wins the race.',
+    ageRange: 'Ages 4–8',
+    duration: '2–4 min',
+    participation: 'Read aloud + keep moving',
+    entry: '/games/tortoise-and-rabbit/index.html',
+    playable: true,
+    runtimeVersion: 1,
+    capabilities: {
+      audio: false,
+      fullscreen: true,
+      restart: true,
+    },
+    guidance: [
+      { title: 'Read together', text: 'Give each racer a voice and pause to wonder what they might do next.' },
+      { title: 'Move steadily', text: 'Hold the forward control or use the keyboard to help Tortoise follow the trail.' },
+      { title: 'Notice persistence', text: 'Talk about how small, patient steps help Tortoise reach the finish.' },
+    ],
+  },
 ];
 
 export function getStory(slug: string): Story | undefined {

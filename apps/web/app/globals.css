@@ -178,6 +178,25 @@ h1, h2 { margin: 0; font-family: var(--serif); font-weight: 400; line-height: 1.
 .art-pebbles span:nth-child(2) { left: 31%; background: #777d79; }
 .art-pebbles span:nth-child(3) { left: 61%; background: #9a8c7a; }
 .story-artwork--crow .art-glow { background: radial-gradient(circle at 56% 72%, rgba(232,220,167,.2), transparent 30%); }
+.story-artwork--race { background: linear-gradient(180deg, #9bcfc2 0%, #d9d49c 50%, #648b54 100%); }
+.story-artwork--race .art-sun { position: absolute; right: 10%; top: 8%; width: 30%; aspect-ratio: 1; border-radius: 50%; background: #f2df98; box-shadow: 0 0 60px rgba(255,239,168,.35); }
+.story-artwork--race .art-hill--back { background: #7da26a; }
+.story-artwork--race .art-hill--front { background: #526f43; }
+.story-artwork--race .art-tree span { background: #654d37; }
+.story-artwork--race .art-tree span::before { background: #567c4a; }
+.art-rabbit { position: absolute; left: 57%; bottom: 17%; width: 16%; height: 25%; }
+.rabbit-body { position: absolute; left: 16%; bottom: 0; width: 64%; height: 52%; border-radius: 52% 50% 40% 38%; background: #d8c4a3; }
+.rabbit-head { position: absolute; left: 2%; top: 20%; width: 50%; aspect-ratio: 1; border-radius: 50%; background: #dfccad; }
+.rabbit-ear { position: absolute; z-index: 1; top: 0; width: 16%; height: 39%; border-radius: 50% 50% 35% 35%; background: #dfccad; transform: rotate(-10deg); }
+.rabbit-ear--one { left: 9%; }.rabbit-ear--two { left: 29%; transform: rotate(8deg); }
+.rabbit-tail { position: absolute; right: 3%; bottom: 27%; width: 25%; aspect-ratio: 1; border-radius: 50%; background: #f2e7d2; }
+.art-tortoise { position: absolute; left: 27%; bottom: 16%; width: 19%; height: 14%; }
+.tortoise-shell { position: absolute; left: 13%; top: 0; width: 68%; height: 72%; border-radius: 50% 50% 38% 38%; background: #6c7e3d; box-shadow: inset -10px -5px 0 rgba(48,65,35,.18); }
+.tortoise-head { position: absolute; right: 0; top: 24%; width: 28%; aspect-ratio: 1; border-radius: 50%; background: #92a65d; }
+.tortoise-feet { position: absolute; left: 22%; bottom: 0; width: 50%; height: 18%; border-radius: 50%; background: #839653; box-shadow: 30px 0 0 #839653; }
+.art-finish { position: absolute; right: 8%; bottom: 13%; width: 22%; height: 43%; border-left: 5px solid #725035; border-right: 5px solid #725035; }
+.art-finish i { position: absolute; left: -9%; top: 3%; width: 118%; padding: 7px 0; background: #e9c775; color: #5b472c; text-align: center; font-size: 10px; font-style: normal; font-weight: 900; letter-spacing: .12em; }
+.story-artwork--race .art-glow { background: radial-gradient(circle at 47% 74%, rgba(255,236,157,.22), transparent 34%); }
 
 .approach-section { background: #121728; }
 .approach-grid { display: grid; grid-template-columns: .82fr 1.18fr; gap: 90px; align-items: start; }

@@ -5,12 +5,13 @@ import { MouseMarker } from './game/objects/MouseMarker';
 import { PilgrimRatReconstruction } from './game/objects/PilgrimRatReconstruction';
 import { SleepingLion } from './game/objects/SleepingLion';
 import { TrappedLion } from './game/objects/TrappedLion';
+import { WebWarriorBoy, type HeroAction } from './game/objects/WebWarriorBoy';
 import { resizeRendererToDisplaySize } from './game/responsive';
 import { addDefaultLighting, createRenderer } from './game/scene/rendering';
 import type { InputState } from './game/types';
 
-type CharacterKind = 'reconstruction' | 'lion' | 'trappedLion' | 'mouse';
-type LabCharacter = SleepingLion | TrappedLion | MouseMarker | PilgrimRatReconstruction;
+type CharacterKind = 'webWarrior' | 'reconstruction' | 'lion' | 'trappedLion' | 'mouse';
+type LabCharacter = SleepingLion | TrappedLion | MouseMarker | PilgrimRatReconstruction | WebWarriorBoy;
 
 const root = document.querySelector<HTMLDivElement>('#character-lab');
 if (!root) throw new Error('Missing #character-lab root');
@@ -24,6 +25,7 @@ labRoot.innerHTML = `
       <label class="lab__field">
         Character
         <select id="lab-character">
+          <option value="webWarrior">Aryaan · Web Warrior Boy</option>
           <option value="reconstruction">Pilgrim Rat Reconstruction</option>
           <option value="lion">Sleeping Lion</option>
           <option value="trappedLion">Trapped Lion</option>
@@ -113,8 +115,8 @@ const mouseInput: InputState = {
   pointerY: 0,
 };
 
-let characterKind: CharacterKind = 'reconstruction';
-let character: LabCharacter = new PilgrimRatReconstruction();
+let characterKind: CharacterKind = 'webWarrior';
+let character: LabCharacter = new WebWarriorBoy();
 let animationSpeed = 1;
 let paused = false;
 let mouseMode: 'idle' | 'walk' | 'action' | 'plead' = 'idle';
@@ -122,6 +124,7 @@ let mousePleaDistance = 0;
 scene.add(character.group);
 
 function actionNames(kind: CharacterKind): Array<[string, string]> {
+  if (kind === 'webWarrior') return [['hero', 'Hero pose'], ['idle', 'Idle'], ['wave', 'Wave'], ['run', 'Run cycle'], ['webShot', 'Web shot']];
   if (kind === 'reconstruction') return [['idle', 'Idle study']];
   if (kind === 'lion') return [['sleep', 'Sleeping'], ['wake', 'Wake up'], ['laugh', 'Laugh'], ['leave', 'Leave']];
   if (kind === 'trappedLion') return [['struggle', 'Struggle'], ['calm', 'Calm']];
@@ -142,7 +145,7 @@ function rebuildActions(): void {
   pauseButton.dataset.action = 'pause';
   pauseButton.textContent = 'Pause';
   actions.appendChild(pauseButton);
-  setActiveButton(characterKind === 'lion' ? 'sleep' : characterKind === 'trappedLion' ? 'struggle' : 'idle');
+  setActiveButton(characterKind === 'webWarrior' ? 'hero' : characterKind === 'lion' ? 'sleep' : characterKind === 'trappedLion' ? 'struggle' : 'idle');
 }
 
 function setActiveButton(action: string): void {
@@ -155,15 +158,20 @@ function replaceCharacter(kind: CharacterKind): void {
   scene.remove(character.group);
   character.dispose();
   characterKind = kind;
-  character = kind === 'reconstruction'
-    ? new PilgrimRatReconstruction()
+  character = kind === 'webWarrior'
+    ? new WebWarriorBoy()
+    : kind === 'reconstruction'
+      ? new PilgrimRatReconstruction()
     : kind === 'lion'
       ? new SleepingLion()
     : kind === 'trappedLion'
       ? new TrappedLion()
       : new MouseMarker();
   if (kind === 'mouse') character.group.position.set(0, 0.02, 0);
-  if (kind === 'reconstruction') {
+  if (kind === 'webWarrior') {
+    camera.position.set(4.2, 3.15, -7.1);
+    controls.target.set(0, 1.65, 0);
+  } else if (kind === 'reconstruction') {
     camera.position.set(
       reconstructionReviewView === 'rear' ? -4.8 : 0.8,
       reconstructionReviewView === 'rear' ? 3.5 : 3.75,
@@ -178,8 +186,10 @@ function replaceCharacter(kind: CharacterKind): void {
   mouseMode = 'idle';
   mousePleaDistance = 0;
   paused = false;
-  status.textContent = kind === 'reconstruction'
-    ? 'Sandbox reconstruction'
+  status.textContent = kind === 'webWarrior'
+    ? 'Articulated standalone object'
+    : kind === 'reconstruction'
+      ? 'Sandbox reconstruction'
     : kind === 'lion'
       ? 'Sleeping'
       : kind === 'trappedLion'
@@ -197,7 +207,9 @@ function playAction(action: string): void {
   }
 
   paused = false;
-  if (character instanceof TrappedLion) {
+  if (character instanceof WebWarriorBoy) {
+    character.setAction(action as HeroAction);
+  } else if (character instanceof TrappedLion) {
     if (action === 'struggle') character.struggle();
     if (action === 'calm') character.calm();
   } else if (character instanceof SleepingLion) {
@@ -237,6 +249,10 @@ speedInput.addEventListener('input', () => {
 });
 
 function updateCharacter(delta: number): void {
+  if (character instanceof WebWarriorBoy) {
+    character.update(delta);
+    return;
+  }
   if (character instanceof PilgrimRatReconstruction) {
     character.update(delta);
     return;
@@ -268,7 +284,7 @@ function animate(): void {
 }
 
 rebuildActions();
-status.textContent = 'Sandbox reconstruction';
+status.textContent = 'Articulated standalone object';
 animate();
 
 window.addEventListener('beforeunload', () => {
