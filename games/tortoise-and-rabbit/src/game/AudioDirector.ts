@@ -25,12 +25,23 @@ export class AudioDirector {
   private wildlifeTimer = 0;
   private braggingTimer = 0;
   private braggingActive = false;
+  private startPromise: Promise<void> | null = null;
   private started = false;
   private disposed = false;
   private muted = false;
 
-  async start(): Promise<void> {
-    if (this.disposed) return;
+  start(): Promise<void> {
+    if (this.disposed) return Promise.resolve();
+    this.startPromise ??= this.startInternal().catch((error: unknown) => {
+      // Safari may reject an automatic resume before the first direct gesture.
+      // Clear the in-flight attempt so the next pointer/key gesture can retry.
+      this.startPromise = null;
+      throw error;
+    });
+    return this.startPromise;
+  }
+
+  private async startInternal(): Promise<void> {
     if (!this.context) this.createGraph();
     if (!this.context) return;
     if (this.context.state !== 'running') await this.context.resume();
@@ -376,7 +387,7 @@ export class AudioDirector {
   private async loadStartledClip(): Promise<void> {
     const base = import.meta.env.BASE_URL;
     try {
-      this.startledBuffer = await this.loadBuffer(`${base}shared/audio/rabbit/startled.wav`);
+      this.startledBuffer = await this.loadBuffer(`${base}audio/rabbit-startled.wav`);
     } catch (error: unknown) {
       this.startledBuffer = null;
       console.warn('Unable to load the shared rabbit startled cue.', error);
@@ -386,7 +397,7 @@ export class AudioDirector {
   private async loadFinalChaseClip(): Promise<void> {
     const base = import.meta.env.BASE_URL;
     try {
-      this.finalChaseBuffer = await this.loadBuffer(`${base}shared/audio/race/final-chase.wav`);
+      this.finalChaseBuffer = await this.loadBuffer(`${base}audio/final-chase.wav`);
     } catch (error: unknown) {
       this.finalChaseBuffer = null;
       console.warn('Unable to load the shared final chase cue.', error);
@@ -396,7 +407,7 @@ export class AudioDirector {
   private async loadSnoreClip(): Promise<void> {
     const base = import.meta.env.BASE_URL;
     try {
-      this.snoreBuffer = await this.loadBuffer(`${base}shared/audio/rabbit/snoring.wav`);
+      this.snoreBuffer = await this.loadBuffer(`${base}audio/rabbit-snoring.mp3`);
     } catch (error: unknown) {
       this.snoreBuffer = null;
       console.warn('Unable to load the shared rabbit snoring recording.', error);
@@ -406,7 +417,7 @@ export class AudioDirector {
   private async loadVictoryClip(): Promise<void> {
     const base = import.meta.env.BASE_URL;
     try {
-      this.victoryBuffer = await this.loadBuffer(`${base}shared/audio/race/tortoise-victory.wav`);
+      this.victoryBuffer = await this.loadBuffer(`${base}audio/tortoise-victory.wav`);
     } catch (error: unknown) {
       this.victoryBuffer = null;
       console.warn('Unable to load the shared tortoise victory cue.', error);

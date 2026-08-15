@@ -3,11 +3,13 @@ export type Movement = { forward: number; sideways: number };
 export class Input {
   private readonly keys = new Set<string>();
   private readonly buttons = new Map<string, boolean>();
+  private readonly listeners = new AbortController();
 
   constructor() {
-    window.addEventListener('keydown', this.onKeyDown);
-    window.addEventListener('keyup', this.onKeyUp);
-    window.addEventListener('blur', this.reset);
+    const options = { signal: this.listeners.signal };
+    window.addEventListener('keydown', this.onKeyDown, options);
+    window.addEventListener('keyup', this.onKeyUp, options);
+    window.addEventListener('blur', this.reset, options);
     document.querySelectorAll<HTMLButtonElement>('[data-move]').forEach((button) => {
       const direction = button.dataset.move ?? '';
       const down = (event: PointerEvent) => {
@@ -20,10 +22,10 @@ export class Input {
         this.buttons.set(direction, false);
         button.classList.remove('is-active');
       };
-      button.addEventListener('pointerdown', down);
-      button.addEventListener('pointerup', up);
-      button.addEventListener('pointercancel', up);
-      button.addEventListener('lostpointercapture', up);
+      button.addEventListener('pointerdown', down, options);
+      button.addEventListener('pointerup', up, options);
+      button.addEventListener('pointercancel', up, options);
+      button.addEventListener('lostpointercapture', up, options);
     });
   }
 
@@ -37,9 +39,8 @@ export class Input {
   }
 
   dispose(): void {
-    window.removeEventListener('keydown', this.onKeyDown);
-    window.removeEventListener('keyup', this.onKeyUp);
-    window.removeEventListener('blur', this.reset);
+    this.reset();
+    this.listeners.abort();
   }
 
   private readonly onKeyDown = (event: KeyboardEvent) => {

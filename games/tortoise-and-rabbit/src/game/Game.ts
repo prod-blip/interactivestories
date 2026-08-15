@@ -104,6 +104,7 @@ export class Game {
   private raceGuideHandler: ((angle: number, distance: number, label: string) => void) | null = null;
   private passedRabbitHandler: (() => void) | null = null;
   private tortoiseMoving = false;
+  private reducedMotion = false;
 
   constructor(parent: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -489,8 +490,8 @@ export class Game {
     this.positionCamera(true);
   }
 
-  setReducedMotion(_reduced: boolean): void {
-    // World movement is entirely input-driven, so there is no ambient camera motion to reduce.
+  setReducedMotion(reduced: boolean): void {
+    this.reducedMotion = reduced;
   }
 
   setMuted(muted: boolean): void {
@@ -531,12 +532,14 @@ export class Game {
   };
 
   private update(delta: number): void {
+    const ambientDelta = this.reducedMotion ? 0 : delta;
+    const ambientTime = this.reducedMotion ? 0 : this.elapsed;
     if (this.openingActive) this.updateOpening(delta);
     else this.updateCameraTransition(delta);
     this.updateStorySequence(delta);
     if (this.forest.group.visible) {
       this.forest.update(this.camera.position.x, this.camera.position.z);
-      this.forest.animate(delta);
+      this.forest.animate(ambientDelta);
     }
     this.raceClearing.animate(delta);
     this.rabbit.update(delta);
@@ -545,19 +548,19 @@ export class Game {
     this.sky.position.copy(this.camera.position);
     this.clouds.position.set(this.camera.position.x * 0.3, 0, this.camera.position.z - 55);
     this.clouds.children.forEach((cloud, index) => {
-      cloud.position.x += delta * (0.13 + index * 0.012);
+      cloud.position.x += ambientDelta * (0.13 + index * 0.012);
       if (cloud.position.x > 48) cloud.position.x = -48;
     });
     this.birds.position.set(this.camera.position.x, 0, this.camera.position.z - 42);
-    this.birds.rotation.y = Math.sin(this.elapsed * 0.08) * 0.15;
+    this.birds.rotation.y = Math.sin(ambientTime * 0.08) * 0.15;
     this.birds.children.forEach((bird, index) => {
-      bird.position.y += Math.sin(this.elapsed * 2.3 + index) * delta * 0.08;
-      bird.rotation.z = Math.sin(this.elapsed * 4.5 + index) * 0.12;
+      bird.position.y += Math.sin(ambientTime * 2.3 + index) * ambientDelta * 0.08;
+      bird.rotation.z = Math.sin(ambientTime * 4.5 + index) * 0.12;
     });
     this.butterflies.position.set(this.camera.position.x, 0, this.camera.position.z - 12);
     this.butterflies.children.forEach((butterfly, index) => {
-      butterfly.position.y = 1.1 + Math.sin(this.elapsed * 2.6 + index * 1.7) * 0.45;
-      butterfly.rotation.y += delta * (0.35 + index * 0.1);
+      butterfly.position.y = 1.1 + Math.sin(ambientTime * 2.6 + index * 1.7) * 0.45;
+      butterfly.rotation.y += ambientDelta * (0.35 + index * 0.1);
     });
 
     this.sun.position.set(this.camera.position.x - 38, 65, this.camera.position.z + 28);
@@ -567,7 +570,8 @@ export class Game {
 
   private updateOpening(delta: number): void {
     this.openingElapsed += delta;
-    const progress = THREE.MathUtils.clamp(this.openingElapsed / this.openingDuration, 0, 1);
+    const openingDuration = this.reducedMotion ? 0.9 : this.openingDuration;
+    const progress = THREE.MathUtils.clamp(this.openingElapsed / openingDuration, 0, 1);
     const eased = progress < 0.5
       ? 4 * progress * progress * progress
       : 1 - Math.pow(-2 * progress + 2, 3) / 2;
@@ -586,7 +590,7 @@ export class Game {
   private startCameraTransition(toPosition: THREE.Vector3, toLook: THREE.Vector3, duration: number): void {
     this.cameraTransition = {
       elapsed: 0,
-      duration,
+      duration: this.reducedMotion ? 0.08 : duration,
       fromPosition: this.camera.position.clone(),
       toPosition,
       fromLook: this.cameraLook.clone(),

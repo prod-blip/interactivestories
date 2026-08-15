@@ -391,7 +391,10 @@ async function bootstrap(): Promise<void> {
   runtime = createStoryRuntime('tortoise-and-rabbit', {
     pause: () => game?.pause(),
     resume: () => game?.resume(),
-    restart: () => game?.restart(),
+    // The story sequence is orchestrated here in main.ts; a document reload is
+    // the only restart path that also cancels every pending dialogue promise
+    // and timer before beginning again from the title card.
+    restart: () => window.location.reload(),
     setMuted: (muted) => game?.setMuted(muted),
     onViewportChange: (viewport) => game?.setReducedMotion(viewport.reducedMotion),
   });

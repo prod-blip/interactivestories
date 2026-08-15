@@ -1,6 +1,8 @@
 # The Tortoise and the Rabbit
 
-The game currently contains its procedural world layer: a bright, lightly overgrown storybook forest assembled from deterministic, recycled tiles.
+A complete interactive Moonlit story about patience and perseverance. The game
+uses a responsive Three.js forest, storybook dialogue, keyboard and touch race
+controls, shared runtime lifecycle events, and a calm layered soundscape.
 
 ## Run
 
@@ -8,4 +10,9 @@ The game currently contains its procedural world layer: a bright, lightly overgr
 npm run dev:tortoise-and-rabbit
 ```
 
-Use WASD, the arrow keys, or the on-screen direction pad to explore freely. The forest generates continuously in every horizontal direction while keeping only the nearby tiles in memory.
+During playable race sections, hold Up Arrow, W, or Space to move forward and
+use Left/Right or A/D to steer gently within the trail. Touch devices show a
+large forward control with left and right steering buttons.
+
+The production build is embedded by the website at
+`/stories/tortoise-and-rabbit/play`.

@@ -261,7 +261,14 @@ footer { padding: 45px 0; border-top: 1px solid var(--line); background: #0c101d
 .icon-button { width: 38px; display: grid; place-items: center; border-radius: 50%; cursor: pointer; }
 .quiet-button:hover, .icon-button:hover { border-color: rgba(232,220,174,.35); background: rgba(232,220,174,.07); }
 .game-frame-wrap { position: relative; min-height: 0; overflow: hidden; border: 1px solid rgba(255,255,255,.12); border-radius: 13px; background: #02040a; }
-.game-frame-wrap:fullscreen { border: 0; border-radius: 0; }
+.game-frame-wrap:fullscreen,
+.game-frame-wrap:-webkit-full-screen {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  border: 0;
+  border-radius: 0;
+}
 .game-frame { width: 100%; height: 100%; display: block; border: 0; }
 .runtime-overlay { position: absolute; inset: 0; z-index: 3; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 30px; background: radial-gradient(circle at 50% 35%, #151938, #050712 72%); color: var(--cream); text-align: center; }
 .runtime-overlay p { margin: 0; color: #aeb3c2; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
@@ -304,9 +311,23 @@ html:fullscreen .game-frame-wrap { width: 100%; height: 100%; border: 0; border-
   .header-inner nav { display: none; }
   .brand { font-size: 16px; }
   .hero-grid { min-height: 570px; padding: 64px 0 40px; }
-  .hero-copy { width: calc(100vw - 30px); max-width: calc(100vw - 30px); overflow: hidden; }
-  .hero h1 { max-width: 100%; font-size: clamp(43px, 12.3vw, 55px); text-wrap: wrap; }
-  .hero-lede { max-width: 100%; font-size: 16px; text-wrap: wrap; }
+  .hero-copy { width: 100%; max-width: 100%; min-width: 0; }
+  .hero h1 {
+    width: 100%;
+    max-width: 100%;
+    font-size: clamp(40px, 11vw, 49px);
+    overflow-wrap: break-word;
+    text-wrap: wrap;
+    white-space: normal;
+  }
+  .hero-lede {
+    width: 100%;
+    max-width: 100%;
+    font-size: 16px;
+    overflow-wrap: break-word;
+    text-wrap: wrap;
+    white-space: normal;
+  }
   .hero-actions { align-items: flex-start; flex-direction: column; gap: 10px; }
   .promise-row { padding-bottom: 26px; }
   .heading-row { margin-bottom: 34px; }
