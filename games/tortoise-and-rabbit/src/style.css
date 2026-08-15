@@ -477,19 +477,6 @@ canvas {
   transform: translate(-50%, -50%);
 }
 
-.race-controls__touch-hint {
-  position: absolute;
-  bottom: max(148px, calc(var(--safe-bottom) + 138px));
-  left: max(20px, calc(var(--safe-left) + 14px));
-  width: 170px;
-  color: rgb(255 248 222 / 88%);
-  font: 700 10px/1.2 Inter, system-ui, sans-serif;
-  letter-spacing: 0.1em;
-  text-align: center;
-  text-shadow: 0 2px 8px #000;
-  text-transform: uppercase;
-}
-
 .story-ending {
   position: fixed;
   inset: 0;
@@ -648,7 +635,7 @@ canvas {
 
 @media (pointer: coarse) {
   .race-controls { display: block; }
-  .gameplay-bubble { bottom: max(128px, calc(var(--safe-bottom) + 118px)); }
+  .gameplay-bubble { bottom: max(150px, calc(var(--safe-bottom) + 140px)); }
 }
 
 @media (pointer: fine) {
@@ -661,6 +648,27 @@ html[data-story-input="touch"] .race-controls {
   display: block;
 }
 
+/* A dialogue panel is an intentional story beat, so the movement wheel is not
+   useful while it is on screen. Clearing it also keeps the conventional
+   bottom dialogue layout uncluttered on phones and tablets. */
+body:has(.narrator-card.is-visible) .race-controls {
+  opacity: 0;
+  visibility: hidden;
+}
+
+html[data-story-input="touch"] .objective-popup {
+  top: max(82px, calc(var(--safe-top) + 72px));
+}
+
+html[data-story-input="touch"] .race-guide {
+  top: max(10px, calc(var(--safe-top) + 8px));
+  right: max(10px, calc(var(--safe-right) + 8px));
+}
+
+html[data-story-input="touch"] .gameplay-bubble {
+  bottom: max(150px, calc(var(--safe-bottom) + 140px));
+}
+
 @media (max-width: 600px) {
   .story-intro__title-card { gap: 8px; padding: 18px; }
   .story-intro__title-card h1 { font-size: clamp(28px, 11vw, 46px); }
@@ -671,14 +679,29 @@ html[data-story-input="touch"] .race-controls {
   .narrator-card.is-character-dialogue {
     padding: 14px 14px max(18px, calc(var(--safe-bottom) + 10px));
   }
-  .narrator-card.is-character-dialogue .narrator-card__panel { padding: 18px 20px 20px; }
-  .narrator-card.is-character-dialogue .narrator-card__text { font-size: clamp(17px, 4.7vw, 21px); }
-  .gameplay-bubble { gap: 6px; padding: 18px 20px; }
-  .gameplay-bubble span { font-size: clamp(16px, 4.7vw, 21px); }
+  .narrator-card.is-character-dialogue .narrator-card__panel {
+    width: min(92vw, 520px);
+    gap: 6px;
+    padding: 14px 17px 16px;
+    border-radius: 14px;
+  }
+  .narrator-card.is-character-dialogue .narrator-card__eyebrow { font-size: 11px; }
+  .narrator-card.is-character-dialogue .narrator-card__text {
+    font-size: clamp(15px, 4.2vw, 19px);
+    line-height: 1.32;
+  }
+  .gameplay-bubble {
+    width: min(calc(100vw - 28px), 430px);
+    gap: 4px;
+    padding: 11px 15px 12px;
+    border-radius: 13px;
+  }
+  .gameplay-bubble strong { font-size: 10px; letter-spacing: 0.12em; }
+  .gameplay-bubble span { font-size: clamp(14px, 4vw, 17px); line-height: 1.28; }
   .race-guide {
-    top: max(76px, calc(var(--safe-top) + 64px));
-    right: max(14px, var(--safe-right));
-    width: min(205px, calc(100vw - 28px));
+    top: max(8px, calc(var(--safe-top) + 7px));
+    right: max(8px, calc(var(--safe-right) + 7px));
+    width: min(184px, calc(100vw - 16px));
     gap: 8px;
     padding: 6px 10px 6px 6px;
     border-radius: 13px;
@@ -688,6 +711,13 @@ html[data-story-input="touch"] .race-controls {
   .race-guide__arrow { font-size: 23px; }
   .race-guide__copy small { font-size: 7px; }
   .race-guide__copy strong { font-size: 12px; }
+  .objective-popup {
+    top: max(68px, calc(var(--safe-top) + 62px));
+    max-width: calc(100vw - 24px);
+    padding: 9px 15px;
+    border-radius: 12px;
+    font-size: 15px;
+  }
   .story-ending { padding: max(14px, var(--safe-top)) 14px max(14px, var(--safe-bottom)); }
   .story-ending__card { gap: 11px; padding: 30px 18px; }
   .story-ending h2 { font-size: clamp(25px, 8.2vw, 36px); }
@@ -718,8 +748,35 @@ html[data-story-input="touch"] .race-controls {
     height: 88px;
   }
   .race-controls__knob { width: 40px; height: 40px; }
-  .race-controls__touch-hint { display: none; }
-  .gameplay-bubble { bottom: max(88px, calc(var(--safe-bottom) + 78px)); padding: 13px 18px; }
+  .gameplay-bubble {
+    right: max(12px, var(--safe-right));
+    bottom: max(12px, var(--safe-bottom));
+    left: auto;
+    width: min(58vw, 440px);
+    padding: 10px 14px;
+    transform: translateY(14px) scale(0.98);
+  }
+  .gameplay-bubble.is-visible { transform: translateY(0) scale(1); }
+  .gameplay-bubble.is-narrator-line {
+    right: auto;
+    left: 50%;
+    transform: translate(-50%, calc(-50% + 14px)) scale(0.98);
+  }
+  .gameplay-bubble.is-narrator-line.is-visible { transform: translate(-50%, -50%) scale(1); }
+  .race-guide {
+    top: max(7px, var(--safe-top));
+    right: max(8px, var(--safe-right));
+    width: min(178px, 38vw);
+  }
+  .objective-popup {
+    top: max(7px, var(--safe-top));
+    left: max(8px, calc(var(--safe-left) + 8px));
+    max-width: 38vw;
+    padding: 7px 12px;
+    font-size: 14px;
+    transform: translateY(-14px);
+  }
+  .objective-popup.is-visible { transform: translateY(0); }
 }
 
 @keyframes leaf {

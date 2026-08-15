@@ -11,9 +11,8 @@ npm run dev:tortoise-and-rabbit
 ```
 
 During playable race sections, hold Up Arrow, W, or Space to move forward and
-use Left/Right or A/D to steer gently within the trail. Touch devices use the
-same floating movement wheel as the other stories: drag upward to move and
-gently left or right to steer while remaining on the trail.
+use Left/Right or A/D for sideways movement. Touch devices use the
+same floating movement wheel as the other stories.
 
 The production build is embedded by the website at
 `/stories/tortoise-and-rabbit/play`.
