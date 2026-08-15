@@ -45,18 +45,10 @@
       </div>
     </div>
     <div id="race-controls" class="race-controls" aria-label="Race controls">
-      <div class="race-controls__pad">
-        <button class="race-controls__steer" type="button" data-move="left" aria-label="Move the tortoise left">
-          <span aria-hidden="true">◀</span>
-        </button>
-        <button class="race-controls__wheel" type="button" data-move="forward" aria-label="Hold to move the tortoise forward">
-          <span aria-hidden="true">▲</span>
-        </button>
-        <button class="race-controls__steer" type="button" data-move="right" aria-label="Move the tortoise right">
-          <span aria-hidden="true">▶</span>
-        </button>
+      <div class="race-controls__base" aria-hidden="true">
+        <span class="race-controls__knob"></span>
       </div>
-      <small class="race-controls__touch-hint">Hold forward · steer left or right</small>
+      <small class="race-controls__touch-hint">Drag upward to move · steer gently</small>
     </div>
     <div id="scene-transition" class="scene-transition" aria-hidden="true"></div>
     <div id="story-ending" class="story-ending" role="dialog" aria-modal="true" aria-labelledby="ending-title" aria-live="polite">

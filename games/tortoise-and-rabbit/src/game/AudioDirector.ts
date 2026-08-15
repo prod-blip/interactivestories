@@ -32,6 +32,7 @@ export class AudioDirector {
 
   start(): Promise<void> {
     if (this.disposed) return Promise.resolve();
+    if (this.started) return this.resumeFromGesture();
     this.startPromise ??= this.startInternal().catch((error: unknown) => {
       // Safari may reject an automatic resume before the first direct gesture.
       // Clear the in-flight attempt so the next pointer/key gesture can retry.
@@ -44,7 +45,7 @@ export class AudioDirector {
   private async startInternal(): Promise<void> {
     if (!this.context) this.createGraph();
     if (!this.context) return;
-    if (this.context.state !== 'running') await this.context.resume();
+    await this.resumeFromGesture();
     if (this.started) return;
     this.started = true;
     this.chirpLoad ??= this.loadBirdChirps();
@@ -71,7 +72,7 @@ export class AudioDirector {
   }
 
   async resume(): Promise<void> {
-    if (this.context && this.context.state !== 'running') await this.context.resume();
+    await this.resumeFromGesture();
   }
 
   setMuted(muted: boolean): void {
@@ -326,6 +327,17 @@ export class AudioDirector {
     this.master = this.context.createGain();
     this.master.gain.value = this.muted ? 0 : 0.62;
     this.master.connect(this.context.destination);
+  }
+
+  private async resumeFromGesture(): Promise<void> {
+    if (!this.context || this.disposed) return;
+    // iPhone/iPad Safari may require a source to be started synchronously in
+    // the trusted touch handler before resume() will open the output route.
+    const primer = this.context.createBufferSource();
+    primer.buffer = this.context.createBuffer(1, 1, this.context.sampleRate);
+    primer.connect(this.context.destination);
+    primer.start();
+    if (this.context.state !== 'running') await this.context.resume();
   }
 
   private scheduleBirdCall(): void {

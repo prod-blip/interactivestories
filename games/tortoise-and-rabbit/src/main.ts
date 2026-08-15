@@ -399,8 +399,11 @@ async function bootstrap(): Promise<void> {
     onViewportChange: (viewport) => game?.setReducedMotion(viewport.reducedMotion),
   });
 
+  // Keep retrying from trusted gestures: iOS Safari can suspend Web Audio
+  // after navigation, fullscreen changes, or an app interruption.
   const unlockAudio = () => game?.enableAudio();
   window.addEventListener('pointerdown', unlockAudio, { passive: true });
+  window.addEventListener('touchend', unlockAudio, { passive: true });
   window.addEventListener('keydown', unlockAudio);
 
   await game.prepare((progress) => {
@@ -410,7 +413,6 @@ async function bootstrap(): Promise<void> {
   runtime.markReady();
   loader?.classList.add('is-hidden');
   window.setTimeout(() => loader?.remove(), 700);
-  game.enableAudio();
   await playOpeningScene(game);
 }
 
