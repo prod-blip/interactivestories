@@ -8,11 +8,33 @@ const loaderStage = loader?.querySelector<HTMLElement>('.loader__stage');
 const loaderBar = loader?.querySelector<HTMLElement>('.loader__bar');
 const loaderPercent = loader?.querySelector<HTMLElement>('.loader__percent');
 const retryButton = loader?.querySelector<HTMLButtonElement>('.loader__retry');
+const storyIntro = document.querySelector<HTMLElement>('#story-intro');
+const titleCard = storyIntro?.querySelector<HTMLElement>('.story-intro__title-card');
 
 if (!app) throw new Error('Missing game root.');
 
 let game: Game | undefined;
 let runtime: StoryRuntime | undefined;
+let introTimers: number[] = [];
+
+function playStoryIntro(): void {
+  introTimers.forEach((timer) => window.clearTimeout(timer));
+  introTimers = [];
+  if (!storyIntro || !titleCard) return;
+
+  storyIntro.classList.remove('is-complete');
+  storyIntro.setAttribute('aria-hidden', 'false');
+  titleCard.classList.remove('is-visible');
+  void titleCard.offsetWidth;
+  introTimers.push(
+    window.setTimeout(() => titleCard.classList.add('is-visible'), 650),
+    window.setTimeout(() => titleCard.classList.remove('is-visible'), 3_350),
+    window.setTimeout(() => {
+      storyIntro.classList.add('is-complete');
+      storyIntro.setAttribute('aria-hidden', 'true');
+    }, 4_250),
+  );
+}
 
 const query = new URLSearchParams(window.location.search);
 const requestedScene = query.get('scene');
@@ -65,7 +87,10 @@ async function bootstrap(): Promise<void> {
   runtime = createStoryRuntime('tortoise-and-tiger', {
     pause: () => game?.pause(),
     resume: () => game?.resume(),
-    restart: () => game?.restart(),
+    restart: () => {
+      game?.restart();
+      if (requestedScene === null) playStoryIntro();
+    },
     setMuted: (muted) => game?.setMuted(muted),
     onViewportChange: (viewport) => game?.onViewportChange(viewport),
   });
@@ -78,6 +103,8 @@ async function bootstrap(): Promise<void> {
   });
   await game.prepare(setProgress);
   game.start();
+  if (requestedScene === null) playStoryIntro();
+  else storyIntro?.classList.add('is-complete');
   runtime.markReady();
   loader?.classList.add('is-complete');
   window.setTimeout(() => loader?.remove(), 500);
@@ -93,6 +120,7 @@ void bootstrap().catch((error: unknown) => {
 });
 
 window.addEventListener('beforeunload', () => {
+  introTimers.forEach((timer) => window.clearTimeout(timer));
   runtime?.dispose();
   game?.dispose();
 });

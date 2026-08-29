@@ -49,6 +49,9 @@ export class Input {
 
     this.target.addEventListener('pointerdown', this.handlePointerDown);
     this.target.addEventListener('pointermove', this.handlePointerMove);
+    // Older iOS Safari versions do not consistently dispatch Pointer Events
+    // inside an iframe. Keep a touch gesture fallback solely for audio unlock.
+    window.addEventListener('touchstart', this.handleTouchStart, { passive: true });
     window.addEventListener('pointerup', this.handlePointerUp);
     window.addEventListener('pointercancel', this.handlePointerCancel);
     window.addEventListener('keydown', this.handleKeyDown);
@@ -70,6 +73,7 @@ export class Input {
   dispose(): void {
     this.target.removeEventListener('pointerdown', this.handlePointerDown);
     this.target.removeEventListener('pointermove', this.handlePointerMove);
+    window.removeEventListener('touchstart', this.handleTouchStart);
     window.removeEventListener('pointerup', this.handlePointerUp);
     window.removeEventListener('pointercancel', this.handlePointerCancel);
     window.removeEventListener('keydown', this.handleKeyDown);
@@ -115,6 +119,8 @@ export class Input {
     this.target.setPointerCapture(event.pointerId);
     this.updateJoystick(event.clientX, event.clientY);
   };
+
+  private readonly handleTouchStart = (): void => this.registerGesture();
 
   private readonly handlePointerMove = (event: PointerEvent): void => {
     if (event.pointerId !== this.touchPointerId) return;

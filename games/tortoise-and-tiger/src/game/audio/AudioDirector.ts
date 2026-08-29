@@ -1,3 +1,8 @@
+const MASTER_VOLUME = 0.3;
+const RIVER_VOLUME = 0.08;
+const CHIRP_MIN_VOLUME = 0.35;
+const CHIRP_VOLUME_RANGE = 0.3;
+
 export class AudioDirector {
   private context: AudioContext | undefined;
   private master: GainNode | undefined;
@@ -39,6 +44,10 @@ export class AudioDirector {
     this.unlocking = this.performUnlock();
     try {
       await this.unlocking;
+    } catch (error: unknown) {
+      // A browser can reject one resume attempt during an iframe or
+      // visibility transition. Every later gesture retries this path.
+      console.warn('Unable to unlock story audio on this interaction.', error);
     } finally {
       this.unlocking = undefined;
     }
@@ -46,6 +55,10 @@ export class AudioDirector {
 
   private async performUnlock(): Promise<void> {
     if (!this.context) this.createGraph();
+    // iOS Safari may report a resumed context but keep it silent until a
+    // source has also been started by the same trusted touch. Queueing one
+    // inaudible sample here primes the output without changing the mix.
+    this.primeOutput();
     if (this.context && this.context.state !== 'running' && this.context.state !== 'closed') {
       await this.context.resume();
     }
@@ -85,7 +98,7 @@ export class AudioDirector {
     this.muted = muted;
     if (this.master && this.context) {
       this.master.gain.cancelScheduledValues(this.context.currentTime);
-      this.master.gain.setTargetAtTime(muted ? 0 : 0.16, this.context.currentTime, 0.08);
+      this.master.gain.setTargetAtTime(muted ? 0 : MASTER_VOLUME, this.context.currentTime, 0.08);
     }
     if (muted) this.clearChirpTimer();
     else if (!this.paused && this.context?.state === 'running' && this.requested) {
@@ -228,13 +241,24 @@ export class AudioDirector {
   }
 
   private createGraph(): void {
-    this.context = new AudioContext();
+    const AudioContextConstructor = window.AudioContext
+      ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextConstructor) throw new Error('Web Audio is not supported by this browser.');
+    this.context = new AudioContextConstructor();
     this.master = this.context.createGain();
-    this.master.gain.value = this.muted ? 0 : 0.16;
+    this.master.gain.value = this.muted ? 0 : MASTER_VOLUME;
     this.master.connect(this.context.destination);
     this.ambience = this.context.createGain();
     this.ambience.gain.value = 1;
     this.ambience.connect(this.master);
+  }
+
+  private primeOutput(): void {
+    if (!this.context || !this.master || this.context.state === 'closed') return;
+    const source = this.context.createBufferSource();
+    source.buffer = this.context.createBuffer(1, 1, this.context.sampleRate);
+    source.connect(this.master);
+    source.start(0);
   }
 
   private canPlay(): boolean {
@@ -318,7 +342,7 @@ export class AudioDirector {
     filter.frequency.value = 5_200;
     filter.Q.value = 0.35;
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.12, now + 1.8);
+    gain.gain.exponentialRampToValueAtTime(RIVER_VOLUME, now + 1.8);
     source.connect(filter).connect(gain).connect(this.ambience);
     source.start(now);
     this.riverSource = source;
@@ -469,10 +493,8 @@ export class AudioDirector {
     const pan = context.createStereoPanner();
     source.buffer = buffer;
     pan.pan.value = (Math.random() - 0.5) * 0.7;
-    // This gain feeds the game's deliberately quiet master bus (0.16). The
-    // previous 0.15 value attenuated the already-naturalistic recordings to
-    // roughly -50 dB on average, making them effectively inaudible.
-    const volume = 0.1 + Math.random() * 0.35;
+    // Keep the call gentle, but above the noise floor of small phone speakers.
+    const volume = CHIRP_MIN_VOLUME + Math.random() * CHIRP_VOLUME_RANGE;
     gain.gain.setValueAtTime(0.0001, now);
     gain.gain.exponentialRampToValueAtTime(volume, now + 0.08);
     gain.gain.setValueAtTime(volume, now + Math.max(0.09, buffer.duration - 0.28));

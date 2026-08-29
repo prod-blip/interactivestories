@@ -56,6 +56,27 @@ export class StoryTiger {
     this.model = gltf.scene;
     this.model.name = 'TigerModel';
 
+    // The source GLB contains three 4096px maps. Uploading those maps with
+    // mipmaps can exceed 200 MB on a mobile GPU and has caused the tiger to
+    // render black on phones. Keep the proven rig/animation GLB, but replace
+    // its material maps before the first render with visually equivalent
+    // 2048px versions.
+    const textureBase = url.slice(0, url.lastIndexOf('/') + 1);
+    const textureLoader = new THREE.TextureLoader();
+    const [normalMap, baseColorMap, roughnessMap] = await Promise.all([
+      textureLoader.loadAsync(`${textureBase}TigerLowPoly-normal.jpg`),
+      textureLoader.loadAsync(`${textureBase}TigerLowPoly-basecolor.jpg`),
+      textureLoader.loadAsync(`${textureBase}TigerLowPoly-roughness.jpg`),
+    ]);
+    [normalMap, baseColorMap, roughnessMap].forEach((texture) => {
+      texture.flipY = false;
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.minFilter = THREE.LinearMipmapLinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+    });
+    baseColorMap.colorSpace = THREE.SRGBColorSpace;
+
     const materials = new Set<THREE.Material>();
     const textures = new Set<THREE.Texture>();
     let meshes = 0;
@@ -77,8 +98,16 @@ export class StoryTiger {
         Object.values(material).forEach((value) => {
           if (value instanceof THREE.Texture) textures.add(value);
         });
+        if (material instanceof THREE.MeshStandardMaterial) {
+          material.map = baseColorMap;
+          material.normalMap = normalMap;
+          material.roughnessMap = roughnessMap;
+          material.metalnessMap = roughnessMap;
+          material.needsUpdate = true;
+        }
       });
     });
+    textures.forEach((texture) => texture.dispose());
 
     this.model.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(this.model);
