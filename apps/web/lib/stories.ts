@@ -101,22 +101,27 @@ export const stories: Story[] = [
   {
     slug: 'tortoise-and-tiger',
     title: 'The Tortoise and the Tiger',
-    eyebrow: 'A new Moonlit story',
-    summary: 'A gentle new story world is being prepared.',
-    description: 'The foundation is in place. Story details and interactions will be added next.',
-    moral: 'To be discovered together.',
+    eyebrow: 'A clever riverside fable',
+    summary: 'A small tortoise discovers that a calm mind can outwit even the mightiest tiger.',
+    description:
+      'Walk beside a peaceful jungle river, hide safely inside a sturdy shell, and help the clever tortoise turn the tiger’s own plan into an escape.',
+    moral: 'A calm, clever mind can be stronger than force.',
     ageRange: 'Ages 4–8',
-    duration: 'Coming soon',
-    participation: 'Coming soon',
+    duration: '10–12 min',
+    participation: 'Read aloud + help escape',
     entry: '/games/tortoise-and-tiger/index.html',
-    playable: false,
+    playable: true,
     runtimeVersion: 1,
     capabilities: {
       audio: true,
       fullscreen: true,
       restart: true,
     },
-    guidance: [],
+    guidance: [
+      { title: 'Read together', text: 'Pause with each passage and wonder what the tortoise might be thinking.' },
+      { title: 'Help gently', text: 'Hide inside the shell, then guide the tortoise through the river at an unhurried pace.' },
+      { title: 'Notice calm thinking', text: 'Talk about how stopping to think helped the tortoise find a safe way home.' },
+    ],
   },
 ];
 

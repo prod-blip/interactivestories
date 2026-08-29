@@ -14,6 +14,7 @@ function setBetween(mesh: THREE.Mesh, start: THREE.Vector3, end: THREE.Vector3):
 /** Stationary, authored cover for the tiger hideout. */
 export class SceneThreeFoliage {
   readonly group = new THREE.Group();
+  private readonly bushLayers: THREE.InstancedMesh[] = [];
 
   constructor() {
     this.group.name = 'SceneThreeWorldFoliage';
@@ -56,6 +57,7 @@ export class SceneThreeFoliage {
       bushes.receiveShadow = true;
       bushes.computeBoundingBox();
       bushes.computeBoundingSphere();
+      this.bushLayers.push(bushes);
       this.group.add(bushes);
     });
 
@@ -126,5 +128,13 @@ export class SceneThreeFoliage {
 
   setVisible(visible: boolean): void {
     this.group.visible = visible;
+    if (visible) this.setSightlineClear(false);
+  }
+
+  /** Removes the close hideout lobes when the camera adopts the tiger's POV. */
+  setSightlineClear(clear: boolean): void {
+    this.bushLayers.forEach((bushes) => {
+      bushes.visible = !clear;
+    });
   }
 }

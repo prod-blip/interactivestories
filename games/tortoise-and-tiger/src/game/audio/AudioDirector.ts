@@ -1,34 +1,83 @@
 export class AudioDirector {
   private context: AudioContext | undefined;
   private master: GainNode | undefined;
-  private musicTimer: number | undefined;
+  private ambience: GainNode | undefined;
+  private unlocking: Promise<void> | undefined;
+  private chirpDataLoad: Promise<ArrayBuffer[]> | undefined;
+  private chirpLoad: Promise<void> | undefined;
+  private chirpBuffers: AudioBuffer[] = [];
+  private chirpTimer: number | undefined;
+  private lastChirpIndex = -1;
+  private hasPlayedChirp = false;
+  private riverDataLoad: Promise<ArrayBuffer | undefined> | undefined;
+  private riverLoad: Promise<void> | undefined;
+  private riverBuffer: AudioBuffer | undefined;
+  private riverSource: AudioBufferSourceNode | undefined;
+  private sniffDataLoad: Promise<ArrayBuffer | undefined> | undefined;
+  private sniffLoad: Promise<void> | undefined;
+  private sniffBuffer: AudioBuffer | undefined;
+  private sniffSource: AudioBufferSourceNode | undefined;
+  private angryGrowlDataLoad: Promise<ArrayBuffer | undefined> | undefined;
+  private angryGrowlLoad: Promise<void> | undefined;
+  private angryGrowlBuffer: AudioBuffer | undefined;
+  private angryGrowlSource: AudioBufferSourceNode | undefined;
+  private angryGrowlRequested = false;
   private requested = false;
   private muted = false;
   private paused = false;
-  private step = 0;
 
   start(): void {
     this.requested = true;
-    if (this.context?.state === 'running') this.startScore();
+    // Network requests are safe before interaction, but constructing an audio
+    // context here is not reliable in Safari and some mobile browsers. Keep the
+    // recordings warm and create the context only inside a genuine gesture.
+    this.preloadAmbience();
   }
 
   async unlock(): Promise<void> {
+    if (this.unlocking) return this.unlocking;
+    this.unlocking = this.performUnlock();
+    try {
+      await this.unlocking;
+    } finally {
+      this.unlocking = undefined;
+    }
+  }
+
+  private async performUnlock(): Promise<void> {
     if (!this.context) this.createGraph();
-    if (this.context?.state === 'suspended') await this.context.resume();
-    if (this.requested && !this.muted && !this.paused) this.startScore();
+    if (this.context && this.context.state !== 'running' && this.context.state !== 'closed') {
+      await this.context.resume();
+    }
+    if (this.requested && !this.muted && !this.paused) {
+      await Promise.all([
+        this.startBirdAmbience(),
+        this.startRiverAmbience(),
+        this.ensureSniffLoaded(),
+        this.ensureAngryGrowlLoaded(),
+      ]);
+      if (this.angryGrowlRequested) void this.playAngryGrowlWhenReady();
+    }
   }
 
   pause(): void {
     this.paused = true;
-    this.stopScore();
+    this.clearChirpTimer();
     if (this.context?.state === 'running') void this.context.suspend();
   }
 
   resume(): void {
     this.paused = false;
     if (this.muted) return;
-    void this.context?.resume().then(() => {
-      if (this.requested) this.startScore();
+    const context = this.context;
+    if (!context) return;
+    void context.resume().then(() => {
+      if (!this.requested) return;
+      void this.startBirdAmbience();
+      void this.startRiverAmbience();
+    }).catch(() => {
+      // A visibility-driven resume may not count as a browser gesture. The
+      // next click/tap/keypress will retry through unlock().
     });
   }
 
@@ -38,8 +87,11 @@ export class AudioDirector {
       this.master.gain.cancelScheduledValues(this.context.currentTime);
       this.master.gain.setTargetAtTime(muted ? 0 : 0.16, this.context.currentTime, 0.08);
     }
-    if (muted) this.stopScore();
-    else if (!this.paused && this.context?.state === 'running' && this.requested) this.startScore();
+    if (muted) this.clearChirpTimer();
+    else if (!this.paused && this.context?.state === 'running' && this.requested) {
+      void this.startBirdAmbience();
+      void this.startRiverAmbience();
+    }
   }
 
   playStomachGrowl(): void {
@@ -101,6 +153,17 @@ export class AudioDirector {
     this.playKnockAt(this.context!.currentTime);
   }
 
+  playSniffs(): void {
+    if (!this.canPlay()) return;
+    void this.playSniffsWhenReady();
+  }
+
+  playAngryGrowl(): void {
+    if (this.muted || this.paused) return;
+    this.angryGrowlRequested = true;
+    void this.playAngryGrowlWhenReady();
+  }
+
   playSplash(): void {
     if (!this.canPlay()) return;
     const context = this.context!;
@@ -141,10 +204,27 @@ export class AudioDirector {
   }
 
   dispose(): void {
-    this.stopScore();
+    this.clearChirpTimer();
+    this.chirpDataLoad = undefined;
+    this.chirpBuffers = [];
+    this.hasPlayedChirp = false;
+    this.riverSource?.stop();
+    this.riverSource = undefined;
+    this.riverDataLoad = undefined;
+    this.riverBuffer = undefined;
+    this.sniffSource?.stop();
+    this.sniffSource = undefined;
+    this.sniffDataLoad = undefined;
+    this.sniffBuffer = undefined;
+    this.angryGrowlSource?.stop();
+    this.angryGrowlSource = undefined;
+    this.angryGrowlDataLoad = undefined;
+    this.angryGrowlBuffer = undefined;
+    this.angryGrowlRequested = false;
     void this.context?.close();
     this.context = undefined;
     this.master = undefined;
+    this.ambience = undefined;
   }
 
   private createGraph(): void {
@@ -152,22 +232,9 @@ export class AudioDirector {
     this.master = this.context.createGain();
     this.master.gain.value = this.muted ? 0 : 0.16;
     this.master.connect(this.context.destination);
-
-    const riverNoise = this.context.createBuffer(1, this.context.sampleRate * 2, this.context.sampleRate);
-    const channel = riverNoise.getChannelData(0);
-    for (let index = 0; index < channel.length; index += 1) {
-      channel[index] = (Math.random() * 2 - 1) * 0.22;
-    }
-    const river = this.context.createBufferSource();
-    const riverFilter = this.context.createBiquadFilter();
-    const riverGain = this.context.createGain();
-    river.buffer = riverNoise;
-    river.loop = true;
-    riverFilter.type = 'lowpass';
-    riverFilter.frequency.value = 620;
-    riverGain.gain.value = 0.038;
-    river.connect(riverFilter).connect(riverGain).connect(this.master);
-    river.start();
+    this.ambience = this.context.createGain();
+    this.ambience.gain.value = 1;
+    this.ambience.connect(this.master);
   }
 
   private canPlay(): boolean {
@@ -191,49 +258,232 @@ export class AudioDirector {
     oscillator.stop(time + 0.13);
   }
 
-  private startScore(): void {
-    if (this.musicTimer !== undefined || !this.context || !this.master) return;
-    this.playMusicStep();
-    this.musicTimer = window.setInterval(() => this.playMusicStep(), 620);
-  }
-
-  private stopScore(): void {
-    if (this.musicTimer === undefined) return;
-    window.clearInterval(this.musicTimer);
-    this.musicTimer = undefined;
-  }
-
-  private playMusicStep(): void {
-    if (!this.context || !this.master || this.context.state !== 'running') return;
-    const scale = [261.63, 329.63, 392, 493.88, 392, 329.63, 293.66, 349.23];
-    const frequency = scale[this.step % scale.length]!;
-    const now = this.context.currentTime;
-    const oscillator = this.context.createOscillator();
-    const gain = this.context.createGain();
-    const filter = this.context.createBiquadFilter();
-    oscillator.type = this.step % 4 === 3 ? 'triangle' : 'sine';
-    oscillator.frequency.value = frequency;
-    filter.type = 'lowpass';
-    filter.frequency.value = 1350;
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.12, now + 0.035);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.08);
-    oscillator.connect(filter).connect(gain).connect(this.master);
-    oscillator.start(now);
-    oscillator.stop(now + 1.12);
-
-    if (this.step % 2 === 0) {
-      const bell = this.context.createOscillator();
-      const bellGain = this.context.createGain();
-      bell.type = 'sine';
-      bell.frequency.value = frequency * 2;
-      bellGain.gain.setValueAtTime(0.0001, now);
-      bellGain.gain.exponentialRampToValueAtTime(0.035, now + 0.02);
-      bellGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
-      bell.connect(bellGain).connect(this.master);
-      bell.start(now);
-      bell.stop(now + 0.65);
+  private async startBirdAmbience(): Promise<void> {
+    if (!this.context || !this.master || this.muted || this.paused) return;
+    this.chirpLoad ??= this.loadChirps();
+    await this.chirpLoad;
+    // Confirm that ambience is active as soon as the player's gesture unlocks
+    // Web Audio. Waiting through the asset load and another five-second timer
+    // made the birds easy to miss, especially during the opening narration.
+    if (!this.hasPlayedChirp && this.canPlay() && this.chirpBuffers.length > 0) {
+      this.playRandomChirp();
     }
-    this.step += 1;
+    this.scheduleNextChirp();
+  }
+
+  private async loadChirps(): Promise<void> {
+    this.preloadAmbience();
+    const context = this.context;
+    if (!context) return;
+    try {
+      const recordings = await this.chirpDataLoad!;
+      this.chirpBuffers = await Promise.all(
+        recordings.map((recording) => context.decodeAudioData(recording.slice(0))),
+      );
+    } catch (error: unknown) {
+      console.warn('Unable to load bird ambience.', error);
+      this.chirpBuffers = [];
+    }
+  }
+
+  private async loadRiver(): Promise<void> {
+    this.preloadAmbience();
+    const context = this.context;
+    if (!context) return;
+    try {
+      const recording = await this.riverDataLoad!;
+      this.riverBuffer = recording
+        ? await context.decodeAudioData(recording.slice(0))
+        : undefined;
+    } catch (error: unknown) {
+      console.warn('Unable to load river ambience.', error);
+      this.riverBuffer = undefined;
+    }
+  }
+
+  private async startRiverAmbience(): Promise<void> {
+    if (!this.context || !this.ambience || this.riverSource || this.muted || this.paused) return;
+    this.riverLoad ??= this.loadRiver();
+    await this.riverLoad;
+    if (!this.canPlay() || !this.context || !this.ambience || !this.riverBuffer || this.riverSource) return;
+
+    const now = this.context.currentTime;
+    const source = this.context.createBufferSource();
+    const filter = this.context.createBiquadFilter();
+    const gain = this.context.createGain();
+    source.buffer = this.riverBuffer;
+    source.loop = true;
+    source.loopEnd = this.riverBuffer.duration;
+    filter.type = 'lowpass';
+    filter.frequency.value = 5_200;
+    filter.Q.value = 0.35;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.12, now + 1.8);
+    source.connect(filter).connect(gain).connect(this.ambience);
+    source.start(now);
+    this.riverSource = source;
+  }
+
+  private async ensureSniffLoaded(): Promise<void> {
+    this.preloadAmbience();
+    const context = this.context;
+    if (!context) return;
+    this.sniffLoad ??= (async () => {
+      try {
+        const recording = await this.sniffDataLoad!;
+        this.sniffBuffer = recording
+          ? await context.decodeAudioData(recording.slice(0))
+          : undefined;
+      } catch (error: unknown) {
+        console.warn('Unable to load tiger sniff.', error);
+        this.sniffBuffer = undefined;
+      }
+    })();
+    await this.sniffLoad;
+  }
+
+  private async playSniffsWhenReady(): Promise<void> {
+    await this.ensureSniffLoaded();
+    const context = this.context;
+    const master = this.master;
+    if (!context || !master || !this.sniffBuffer || !this.canPlay()) return;
+
+    this.sniffSource?.stop();
+    const source = context.createBufferSource();
+    const gain = context.createGain();
+    source.buffer = this.sniffBuffer;
+    gain.gain.value = 0.9;
+    source.connect(gain).connect(master);
+    source.start();
+    source.onended = () => {
+      if (this.sniffSource === source) this.sniffSource = undefined;
+    };
+    this.sniffSource = source;
+  }
+
+  private async ensureAngryGrowlLoaded(): Promise<void> {
+    this.preloadAmbience();
+    const context = this.context;
+    if (!context) return;
+    this.angryGrowlLoad ??= (async () => {
+      try {
+        const recording = await this.angryGrowlDataLoad!;
+        this.angryGrowlBuffer = recording
+          ? await context.decodeAudioData(recording.slice(0))
+          : undefined;
+      } catch (error: unknown) {
+        console.warn('Unable to load angry tiger growl.', error);
+        this.angryGrowlBuffer = undefined;
+      }
+    })();
+    await this.angryGrowlLoad;
+  }
+
+  private async playAngryGrowlWhenReady(): Promise<void> {
+    await this.ensureAngryGrowlLoaded();
+    const context = this.context;
+    const master = this.master;
+    const ambience = this.ambience;
+    if (!this.angryGrowlRequested || !context || !master || !ambience
+      || !this.angryGrowlBuffer || !this.canPlay()) return;
+
+    this.angryGrowlRequested = false;
+    this.angryGrowlSource?.stop();
+    const source = context.createBufferSource();
+    const gain = context.createGain();
+    const now = context.currentTime;
+    const growlEnd = now + this.angryGrowlBuffer.duration;
+    source.buffer = this.angryGrowlBuffer;
+    gain.gain.value = 1.05;
+
+    // Give the one dramatic growl room without altering the player's chosen
+    // master volume. Only the river and birds dip, then return gently.
+    ambience.gain.cancelScheduledValues(now);
+    ambience.gain.setValueAtTime(ambience.gain.value, now);
+    ambience.gain.linearRampToValueAtTime(0.22, now + 0.14);
+    ambience.gain.setValueAtTime(0.22, Math.max(now + 0.14, growlEnd - 0.55));
+    ambience.gain.linearRampToValueAtTime(1, growlEnd + 0.4);
+
+    source.connect(gain).connect(master);
+    source.start(now);
+    source.onended = () => {
+      if (this.angryGrowlSource === source) this.angryGrowlSource = undefined;
+    };
+    this.angryGrowlSource = source;
+  }
+
+  private preloadAmbience(): void {
+    const base = import.meta.env.BASE_URL;
+    this.chirpDataLoad ??= Promise.all([
+      this.fetchAudioData(`${base}shared/audio/birds/chirp-1.wav`),
+      this.fetchAudioData(`${base}shared/audio/birds/chirp-2.wav`),
+      this.fetchAudioData(`${base}shared/audio/birds/chirp-3.wav`),
+    ]).catch((error: unknown) => {
+      console.warn('Unable to preload bird ambience.', error);
+      return [];
+    });
+    this.riverDataLoad ??= this.fetchAudioData(`${base}audio/river-loop.wav`).catch((error: unknown) => {
+      console.warn('Unable to preload river ambience.', error);
+      return undefined;
+    });
+    this.sniffDataLoad ??= this.fetchAudioData(`${base}audio/tiger-two-short-sniffs.wav`).catch((error: unknown) => {
+      console.warn('Unable to preload tiger sniff.', error);
+      return undefined;
+    });
+    this.angryGrowlDataLoad ??= this.fetchAudioData(`${base}audio/tiger-angry-growl.wav`).catch((error: unknown) => {
+      console.warn('Unable to preload angry tiger growl.', error);
+      return undefined;
+    });
+  }
+
+  private async fetchAudioData(url: string): Promise<ArrayBuffer> {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Unable to load ${url}: ${response.status}`);
+    return response.arrayBuffer();
+  }
+
+  private scheduleNextChirp(): void {
+    if (this.chirpTimer !== undefined || !this.canPlay() || this.chirpBuffers.length === 0) return;
+    this.chirpTimer = window.setTimeout(() => {
+      this.chirpTimer = undefined;
+      this.playRandomChirp();
+      this.scheduleNextChirp();
+    }, 5_000);
+  }
+
+  private playRandomChirp(): void {
+    const context = this.context;
+    const master = this.master;
+    if (!context || !master || !this.canPlay() || this.chirpBuffers.length === 0) return;
+    let index = Math.floor(Math.random() * this.chirpBuffers.length);
+    if (this.chirpBuffers.length > 1 && index === this.lastChirpIndex) {
+      index = (index + 1) % this.chirpBuffers.length;
+    }
+    this.lastChirpIndex = index;
+    this.hasPlayedChirp = true;
+
+    const buffer = this.chirpBuffers[index]!;
+    const now = context.currentTime;
+    const source = context.createBufferSource();
+    const gain = context.createGain();
+    const pan = context.createStereoPanner();
+    source.buffer = buffer;
+    pan.pan.value = (Math.random() - 0.5) * 0.7;
+    // This gain feeds the game's deliberately quiet master bus (0.16). The
+    // previous 0.15 value attenuated the already-naturalistic recordings to
+    // roughly -50 dB on average, making them effectively inaudible.
+    const volume = 0.1 + Math.random() * 0.35;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(volume, now + 0.08);
+    gain.gain.setValueAtTime(volume, now + Math.max(0.09, buffer.duration - 0.28));
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + buffer.duration);
+    source.connect(gain).connect(pan).connect(this.ambience ?? master);
+    source.start(now);
+  }
+
+  private clearChirpTimer(): void {
+    if (this.chirpTimer === undefined) return;
+    window.clearTimeout(this.chirpTimer);
+    this.chirpTimer = undefined;
   }
 }

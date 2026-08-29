@@ -26,7 +26,6 @@ export class Input {
   private touchCenterX = 0;
   private touchCenterY = 0;
   private movementEnabled = false;
-  private gestureReceived = false;
 
   readonly state: MovementState = {
     left: false,
@@ -39,7 +38,7 @@ export class Input {
 
   constructor(
     private readonly target: HTMLElement,
-    private readonly onFirstGesture: () => void,
+    private readonly onGesture: () => void,
   ) {
     this.touchControls.className = 'touch-controls touch-controls--disabled';
     this.joystickBase.className = 'touch-controls__base';
@@ -81,9 +80,10 @@ export class Input {
   }
 
   private registerGesture(): void {
-    if (this.gestureReceived) return;
-    this.gestureReceived = true;
-    this.onFirstGesture();
+    // Retry on every genuine interaction. Some browsers can reject an initial
+    // audio resume during iframe/visibility transitions; one failed attempt
+    // must not leave the whole story silent for the rest of the session.
+    this.onGesture();
   }
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {

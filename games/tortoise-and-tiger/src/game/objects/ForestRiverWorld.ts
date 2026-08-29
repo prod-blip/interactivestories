@@ -28,6 +28,10 @@ type FlyingBird = {
 
 const WORLD_MIN_Z = -76;
 const WORLD_MAX_Z = 46;
+// The playable route finishes close to WORLD_MIN_Z. The ending camera rises
+// high enough to see beyond that gameplay boundary, so keep the continuous
+// river and its banks going well into the background.
+const SCENERY_MIN_Z = -132;
 const RIVER_BASE_WIDTH = 12.6;
 
 function seeded(index: number, salt = 0): number {
@@ -57,11 +61,77 @@ export class ForestRiverWorld {
   private readonly butterflies: Butterfly[] = [];
   private readonly fish: JumpingFish[] = [];
   private readonly birds: FlyingBird[] = [];
+  private readonly treeBases: THREE.Vector3[] = [];
   private readonly bushMeshes: THREE.InstancedMesh[] = [];
   private readonly riverGameplayDecor: THREE.Object3D[] = [];
   private readonly floatingThings: { object: THREE.Object3D; phase: number; baseY: number }[] = [];
   private readonly sparklePositions: Float32Array;
   private readonly sparklePoints: THREE.Points;
+  private readonly waterMaterial = new THREE.ShaderMaterial({
+    uniforms: THREE.UniformsUtils.merge([
+      THREE.UniformsLib.fog,
+      {
+        uTime: { value: 0 },
+        uDeepColor: { value: new THREE.Color(0x176b72) },
+        uShallowColor: { value: new THREE.Color(0x58b98d) },
+        uSkyColor: { value: new THREE.Color(0xb8e6dc) },
+      },
+    ]),
+    vertexShader: `
+      uniform float uTime;
+      varying vec2 vUv;
+      varying vec3 vWorldPosition;
+      varying vec3 vWorldNormal;
+      #include <fog_pars_vertex>
+
+      void main() {
+        vUv = uv;
+        vec3 transformed = position;
+        float broadWave = sin(uv.y * 45.0 - uTime * 1.15 + uv.x * 5.0) * 0.025;
+        float crossWave = sin(uv.y * 83.0 - uTime * 1.85 - uv.x * 14.0) * 0.012;
+        transformed.y += (broadWave + crossWave) * sin(uv.x * 3.14159265);
+        vec4 worldPosition = modelMatrix * vec4(transformed, 1.0);
+        vWorldPosition = worldPosition.xyz;
+        vWorldNormal = normalize(mat3(modelMatrix) * normal);
+        vec4 mvPosition = viewMatrix * worldPosition;
+        gl_Position = projectionMatrix * mvPosition;
+        #include <fog_vertex>
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime;
+      uniform vec3 uDeepColor;
+      uniform vec3 uShallowColor;
+      uniform vec3 uSkyColor;
+      varying vec2 vUv;
+      varying vec3 vWorldPosition;
+      varying vec3 vWorldNormal;
+      #include <fog_pars_fragment>
+
+      void main() {
+        float bankDistance = min(vUv.x, 1.0 - vUv.x) * 2.0;
+        float depth = smoothstep(0.02, 0.72, bankDistance);
+        float flowA = sin(vUv.y * 92.0 - uTime * 2.5 + sin(vUv.x * 18.0) * 1.3);
+        float flowB = sin(vUv.y * 51.0 - uTime * 1.4 - vUv.x * 27.0);
+        float ripples = flowA * 0.055 + flowB * 0.035;
+        vec3 viewDirection = normalize(cameraPosition - vWorldPosition);
+        float fresnel = pow(1.0 - max(dot(normalize(vWorldNormal), viewDirection), 0.0), 2.5);
+        vec3 waterColor = mix(uShallowColor, uDeepColor, depth * 0.88);
+        waterColor = mix(waterColor, uSkyColor, fresnel * 0.52);
+        waterColor += vec3(0.72, 0.94, 0.82) * max(ripples, 0.0) * (0.18 + fresnel * 0.36);
+        float shoreline = 1.0 - smoothstep(0.0, 0.13, bankDistance);
+        waterColor += vec3(0.28, 0.20, 0.08) * shoreline * 0.08;
+        gl_FragColor = vec4(waterColor, mix(0.78, 0.91, depth));
+        #include <fog_fragment>
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }
+    `,
+    transparent: true,
+    depthWrite: true,
+    fog: true,
+    side: THREE.DoubleSide,
+  });
   private elapsed = 0;
 
   private readonly bark = makeMaterial(0x8a5738, 0.96);
@@ -71,7 +141,7 @@ export class ForestRiverWorld {
   private readonly leafC = makeMaterial(0x3e8b55, 0.93);
   private readonly stone = makeMaterial(0x7d8b80, 0.98);
   private readonly stoneWarm = makeMaterial(0xa89a7e, 0.98);
-  private readonly sand = makeMaterial(0xe8c98a, 0.98);
+  private readonly sand = makeMaterial(0xb99a63, 0.99);
   private readonly grass = makeMaterial(0x78b95c, 0.96);
   private readonly darkGrass = makeMaterial(0x3f8b52, 0.98);
   private readonly treeTrunkGeometry = new THREE.CylinderGeometry(0.36, 0.58, 4.8, 9);
@@ -83,17 +153,25 @@ export class ForestRiverWorld {
   constructor() {
     this.group.name = 'OpeningForestRiver';
 
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(100, 110), this.grass);
+    const sceneryDepth = WORLD_MAX_Z - SCENERY_MIN_Z + 20;
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(100, sceneryDepth), this.grass);
     ground.name = 'ForestFloor';
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.42;
+    ground.position.z = (SCENERY_MIN_Z + WORLD_MAX_Z) * 0.5;
     ground.receiveShadow = true;
     this.group.add(ground);
 
     this.createRiverAndBanks();
+    this.createRaisedForestFloor();
+    this.createDistantCanopy();
     this.createTrees();
+    this.createPalms();
     this.createBushes();
+    this.createTropicalUndergrowth();
+    this.createDappledLight();
     this.createRocksAndBranches();
+    this.createRootsAndVines();
     this.createFlowersAndMushrooms();
     this.createReeds();
     this.createWaterLife();
@@ -167,6 +245,7 @@ export class ForestRiverWorld {
 
   update(delta: number): void {
     this.elapsed += delta;
+    this.waterMaterial.uniforms.uTime!.value = this.elapsed;
 
     this.swayingTrees.forEach(({ crown, phase, strength }) => {
       crown.rotation.z = Math.sin(this.elapsed * 0.72 + phase) * strength;
@@ -237,19 +316,7 @@ export class ForestRiverWorld {
       (z) => this.rightWaterEdgeAt(z),
       0.01,
     );
-    const water = new THREE.Mesh(
-      waterGeometry,
-      new THREE.MeshPhysicalMaterial({
-        color: 0x39acd0,
-        roughness: 0.22,
-        metalness: 0.02,
-        transparent: true,
-        opacity: 0.9,
-        transmission: 0.08,
-        clearcoat: 0.48,
-        clearcoatRoughness: 0.25,
-      }),
-    );
+    const water = new THREE.Mesh(waterGeometry, this.waterMaterial);
     water.name = 'SparklingRiver';
     water.receiveShadow = true;
     this.group.add(water);
@@ -260,14 +327,18 @@ export class ForestRiverWorld {
         (z) => this.rightWaterEdgeAt(z) - 0.42,
         -0.08,
       ),
-      makeMaterial(0x65b59c, 1),
+      new THREE.MeshStandardMaterial({
+        color: 0x597c62,
+        roughness: 1,
+        vertexColors: false,
+      }),
     );
     riverbed.name = 'VisibleRiverbed';
     this.group.add(riverbed);
 
     const leftSand = new THREE.Mesh(
       this.createRibbonGeometry(
-        (z) => this.leftWaterEdgeAt(z) - 2.85 - Math.sin(z * 0.11 + 0.4) * 0.3,
+        (z) => this.leftWaterEdgeAt(z) - 1.72 - Math.sin(z * 0.11 + 0.4) * 0.24,
         (z) => this.leftWaterEdgeAt(z) + 0.1,
         -0.015,
       ),
@@ -279,14 +350,37 @@ export class ForestRiverWorld {
     const rightSand = new THREE.Mesh(
       this.createRibbonGeometry(
         (z) => this.rightWaterEdgeAt(z) - 0.1,
-        (z) => this.rightWaterEdgeAt(z) + 2.2 + Math.sin(z * 0.095 - 0.7) * 0.28,
+        (z) => this.rightWaterEdgeAt(z) + 1.58 + Math.sin(z * 0.095 - 0.7) * 0.24,
         -0.02,
       ),
-      makeMaterial(0xe1c181, 0.98),
+      makeMaterial(0xad8e5b, 0.99),
     );
     rightSand.name = 'OppositeSandyEdge';
     rightSand.receiveShadow = true;
     this.group.add(leftSand, rightSand);
+
+    const wetMud = makeMaterial(0x675d3d, 0.99);
+    const leftWetEdge = new THREE.Mesh(
+      this.createRibbonGeometry(
+        (z) => this.leftWaterEdgeAt(z) - 0.62 - Math.sin(z * 0.31) * 0.12,
+        (z) => this.leftWaterEdgeAt(z) + 0.04,
+        0.004,
+      ),
+      wetMud,
+    );
+    leftWetEdge.name = 'LeftWetRiverEdge';
+    const rightWetEdge = new THREE.Mesh(
+      this.createRibbonGeometry(
+        (z) => this.rightWaterEdgeAt(z) - 0.04,
+        (z) => this.rightWaterEdgeAt(z) + 0.56 + Math.sin(z * 0.27 + 1.4) * 0.14,
+        0.002,
+      ),
+      wetMud,
+    );
+    rightWetEdge.name = 'RightWetRiverEdge';
+    leftWetEdge.receiveShadow = true;
+    rightWetEdge.receiveShadow = true;
+    this.group.add(leftWetEdge, rightWetEdge);
 
     for (let index = 0; index < 22; index += 1) {
       const z = THREE.MathUtils.lerp(WORLD_MIN_Z + 3, WORLD_MAX_Z - 3, seeded(index, 22));
@@ -304,6 +398,199 @@ export class ForestRiverWorld {
       this.group.add(ripple);
       this.floatingThings.push({ object: ripple, phase: seeded(index, 24) * Math.PI * 2, baseY: 0.14 });
     }
+  }
+
+  private createRaisedForestFloor(): void {
+    const jungleFloor = new THREE.MeshStandardMaterial({
+      color: 0x3f7944,
+      roughness: 1,
+      side: THREE.DoubleSide,
+    });
+    for (const side of [-1, 1] as const) {
+      const terrain = new THREE.Mesh(this.createForestBankGeometry(side), jungleFloor);
+      terrain.name = side < 0 ? 'RaisedLeftJungleFloor' : 'RaisedRightJungleFloor';
+      terrain.receiveShadow = true;
+      this.group.add(terrain);
+    }
+  }
+
+  private createForestBankGeometry(side: -1 | 1): THREE.BufferGeometry {
+    const segments = 96;
+    const distances = [1.68, 5.8, 13.5, 31];
+    const heights = [-0.035, 0.08, 0.36, 0.68];
+    const positions: number[] = [];
+    const uvs: number[] = [];
+    const indices: number[] = [];
+    for (let segment = 0; segment <= segments; segment += 1) {
+      const t = segment / segments;
+      const z = THREE.MathUtils.lerp(SCENERY_MIN_Z, WORLD_MAX_Z, t);
+      const edge = side < 0 ? this.leftWaterEdgeAt(z) : this.rightWaterEdgeAt(z);
+      distances.forEach((distance, band) => {
+        const uneven = Math.sin(z * (0.09 + band * 0.017) + side * band) * (0.035 + band * 0.025);
+        positions.push(edge + side * distance, heights[band]! + uneven, z);
+        uvs.push(band / (distances.length - 1), t * 7);
+        if (segment === segments || band === distances.length - 1) return;
+        const root = segment * distances.length + band;
+        const next = root + distances.length;
+        indices.push(root, next, root + 1, next, next + 1, root + 1);
+      });
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    return geometry;
+  }
+
+  private createDistantCanopy(): void {
+    const canopyGeometry = new THREE.DodecahedronGeometry(1, 1);
+    const canopyMaterial = makeMaterial(0x245d3d, 0.98);
+    const canopy = new THREE.InstancedMesh(canopyGeometry, canopyMaterial, 76);
+    canopy.name = 'DistantContinuousJungleCanopy';
+    const dummy = new THREE.Object3D();
+    for (let index = 0; index < 76; index += 1) {
+      const side = index % 2 === 0 ? -1 : 1;
+      const rowIndex = Math.floor(index / 2);
+      const z = THREE.MathUtils.lerp(SCENERY_MIN_Z + 2, WORLD_MAX_Z - 2, rowIndex / 37);
+      const x = this.riverCenterAt(z)
+        + side * (this.riverWidthAt(z) * 0.5 + 14.5 + seeded(index, 211) * 6.5);
+      const radius = 4.1 + seeded(index, 212) * 2.4;
+      dummy.position.set(x, 3.8 + seeded(index, 213) * 2.1, z + (seeded(index, 214) - 0.5) * 3.5);
+      dummy.scale.set(radius * 1.25, radius, radius * 1.05);
+      dummy.rotation.set(0, seeded(index, 215) * Math.PI, (seeded(index, 216) - 0.5) * 0.12);
+      dummy.updateMatrix();
+      canopy.setMatrixAt(index, dummy.matrix);
+    }
+    canopy.instanceMatrix.needsUpdate = true;
+    canopy.receiveShadow = true;
+    this.group.add(canopy);
+  }
+
+  private createPalms(): void {
+    const count = 14;
+    const trunkGeometry = new THREE.CylinderGeometry(0.2, 0.34, 1, 8);
+    const frondGeometry = new THREE.ConeGeometry(0.28, 2.65, 5);
+    const trunks = new THREE.InstancedMesh(trunkGeometry, this.barkLight, count);
+    const fronds = new THREE.InstancedMesh(frondGeometry, this.leafB, count * 7);
+    trunks.name = 'InstancedJunglePalmTrunks';
+    fronds.name = 'InstancedJunglePalmFronds';
+    const dummy = new THREE.Object3D();
+    let frondOffset = 0;
+    for (let index = 0; index < count; index += 1) {
+      const z = THREE.MathUtils.lerp(WORLD_MIN_Z + 2, WORLD_MAX_Z - 3, seeded(index, 220));
+      const side = index % 2 === 0 ? -1 : 1;
+      const x = this.riverCenterAt(z)
+        + side * (this.riverWidthAt(z) * 0.5 + 5.2 + seeded(index, 221) * 6.2);
+      const height = 5.4 + seeded(index, 222) * 2.4;
+      dummy.position.set(x, -0.24 + height * 0.5, z);
+      dummy.scale.set(1, height, 1);
+      dummy.rotation.set(0, seeded(index, 223) * Math.PI, (seeded(index, 224) - 0.5) * 0.08);
+      dummy.updateMatrix();
+      trunks.setMatrixAt(index, dummy.matrix);
+      for (let leaf = 0; leaf < 7; leaf += 1) {
+        const angle = (leaf / 7) * Math.PI * 2 + seeded(index, 225) * 0.4;
+        dummy.position.set(x + Math.cos(angle) * 0.62, height - 0.05, z + Math.sin(angle) * 0.62);
+        dummy.scale.set(0.85 + (leaf % 2) * 0.15, 1, 0.65);
+        dummy.rotation.set(Math.sin(angle) * 0.32, angle, Math.cos(angle) * 1.12);
+        dummy.updateMatrix();
+        fronds.setMatrixAt(frondOffset++, dummy.matrix);
+      }
+    }
+    trunks.instanceMatrix.needsUpdate = true;
+    fronds.instanceMatrix.needsUpdate = true;
+    trunks.castShadow = true;
+    trunks.receiveShadow = true;
+    fronds.receiveShadow = true;
+    this.group.add(trunks, fronds);
+  }
+
+  private createTropicalUndergrowth(): void {
+    const clusterCount = 28;
+    const leavesPerCluster = 7;
+    const fernGeometry = new THREE.PlaneGeometry(0.34, 1.55);
+    fernGeometry.translate(0, 0.775, 0);
+    const fernMaterial = new THREE.MeshStandardMaterial({
+      color: 0x3e8c50,
+      roughness: 0.96,
+      side: THREE.DoubleSide,
+    });
+    const ferns = new THREE.InstancedMesh(fernGeometry, fernMaterial, clusterCount * leavesPerCluster);
+    ferns.name = 'InstancedRiverbankFerns';
+    const broadLeafGeometry = new THREE.CircleGeometry(0.52, 10);
+    broadLeafGeometry.translate(0, 0.34, 0);
+    const broadLeaves = new THREE.InstancedMesh(
+      broadLeafGeometry,
+      new THREE.MeshStandardMaterial({ color: 0x4e9c58, roughness: 0.93, side: THREE.DoubleSide }),
+      18 * 5,
+    );
+    broadLeaves.name = 'InstancedBroadJungleLeaves';
+    const dummy = new THREE.Object3D();
+    let offset = 0;
+    for (let cluster = 0; cluster < clusterCount; cluster += 1) {
+      const z = THREE.MathUtils.lerp(WORLD_MIN_Z, WORLD_MAX_Z, seeded(cluster, 230));
+      const side = cluster % 2 === 0 ? -1 : 1;
+      const rootX = this.riverCenterAt(z)
+        + side * (this.riverWidthAt(z) * 0.5 + 3.3 + seeded(cluster, 231) * 5.8);
+      for (let leaf = 0; leaf < leavesPerCluster; leaf += 1) {
+        const angle = (leaf / leavesPerCluster) * Math.PI * 2;
+        const scale = 0.72 + seeded(cluster, leaf + 232) * 0.55;
+        dummy.position.set(rootX + Math.cos(angle) * 0.18, -0.18, z + Math.sin(angle) * 0.18);
+        dummy.scale.set(scale, scale, scale);
+        dummy.rotation.set(-0.2 + Math.sin(angle) * 0.22, angle, Math.cos(angle) * 0.72);
+        dummy.updateMatrix();
+        ferns.setMatrixAt(offset++, dummy.matrix);
+      }
+    }
+    offset = 0;
+    for (let cluster = 0; cluster < 18; cluster += 1) {
+      const z = THREE.MathUtils.lerp(WORLD_MIN_Z, WORLD_MAX_Z, seeded(cluster, 250));
+      const side = cluster % 2 === 0 ? -1 : 1;
+      const rootX = this.riverCenterAt(z)
+        + side * (this.riverWidthAt(z) * 0.5 + 4.2 + seeded(cluster, 251) * 5.6);
+      for (let leaf = 0; leaf < 5; leaf += 1) {
+        const angle = (leaf / 5) * Math.PI * 2 + seeded(cluster, 252) * 0.5;
+        dummy.position.set(rootX + Math.cos(angle) * 0.24, 0.12, z + Math.sin(angle) * 0.24);
+        dummy.scale.set(0.72, 1.32, 1);
+        dummy.rotation.set(-0.08, angle, Math.cos(angle) * 0.48);
+        dummy.updateMatrix();
+        broadLeaves.setMatrixAt(offset++, dummy.matrix);
+      }
+    }
+    ferns.instanceMatrix.needsUpdate = true;
+    broadLeaves.instanceMatrix.needsUpdate = true;
+    ferns.receiveShadow = true;
+    broadLeaves.receiveShadow = true;
+    this.group.add(ferns, broadLeaves);
+  }
+
+  private createDappledLight(): void {
+    const geometry = new THREE.CircleGeometry(1, 18);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xffeab0,
+      transparent: true,
+      opacity: 0.075,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+    const dapples = new THREE.InstancedMesh(geometry, material, 44);
+    dapples.name = 'InstancedCanopyLightDapples';
+    dapples.renderOrder = 1;
+    const dummy = new THREE.Object3D();
+    for (let index = 0; index < 44; index += 1) {
+      const z = THREE.MathUtils.lerp(WORLD_MIN_Z, WORLD_MAX_Z, seeded(index, 260));
+      const side = index % 2 === 0 ? -1 : 1;
+      const x = this.riverCenterAt(z)
+        + side * (this.riverWidthAt(z) * 0.5 + 2.8 + seeded(index, 261) * 8.5);
+      const scale = 0.65 + seeded(index, 262) * 1.55;
+      dummy.position.set(x, 0.025, z);
+      dummy.rotation.set(-Math.PI / 2, 0, seeded(index, 263) * Math.PI);
+      dummy.scale.set(scale * 1.8, scale, 1);
+      dummy.updateMatrix();
+      dapples.setMatrixAt(index, dummy.matrix);
+    }
+    dapples.instanceMatrix.needsUpdate = true;
+    this.group.add(dapples);
   }
 
   private createTrees(): void {
@@ -333,6 +620,7 @@ export class ForestRiverWorld {
       }
       tree.rotation.y = seeded(index, 4) * Math.PI * 2;
       this.group.add(tree);
+      this.treeBases.push(tree.position.clone());
       dummy.position.set(tree.position.x, -0.405, tree.position.z);
       dummy.rotation.set(-Math.PI / 2, 0, tree.rotation.y);
       dummy.scale.set(2.25 * scale, 1.55 * scale, 1);
@@ -461,6 +749,51 @@ export class ForestRiverWorld {
       branch.rotation.y = seeded(index, 122) * Math.PI;
       setShadows(branch);
       this.group.add(branch);
+    }
+  }
+
+  private createRootsAndVines(): void {
+    const rootedTrees = this.treeBases.filter((_, index) => index % 3 === 0);
+    const rootsPerTree = 3;
+    const rootGeometry = new THREE.CylinderGeometry(0.035, 0.18, 1, 6);
+    const roots = new THREE.InstancedMesh(rootGeometry, this.bark, rootedTrees.length * rootsPerTree);
+    roots.name = 'InstancedButtressAndSurfaceRoots';
+    const dummy = new THREE.Object3D();
+    const up = new THREE.Vector3(0, 1, 0);
+    const direction = new THREE.Vector3();
+    let offset = 0;
+    rootedTrees.forEach((base, treeIndex) => {
+      for (let root = 0; root < rootsPerTree; root += 1) {
+        const angle = (root / rootsPerTree) * Math.PI * 2 + seeded(treeIndex, 270) * 0.8;
+        const length = 1.35 + seeded(treeIndex, root + 271) * 0.85;
+        direction.set(Math.cos(angle), -0.13, Math.sin(angle)).normalize();
+        dummy.position.copy(base).addScaledVector(direction, length * 0.48);
+        dummy.position.y = -0.04 + (root % 2) * 0.035;
+        dummy.scale.set(1, length, 1);
+        dummy.quaternion.setFromUnitVectors(up, direction);
+        dummy.updateMatrix();
+        roots.setMatrixAt(offset++, dummy.matrix);
+      }
+    });
+    roots.instanceMatrix.needsUpdate = true;
+    roots.castShadow = true;
+    roots.receiveShadow = true;
+    this.group.add(roots);
+
+    const vineMaterial = makeMaterial(0x315f35, 0.98);
+    for (let index = 0; index < this.treeBases.length - 2; index += 6) {
+      const startBase = this.treeBases[index]!;
+      const endBase = this.treeBases[index + 2]!;
+      if (startBase.distanceTo(endBase) > 20) continue;
+      const start = startBase.clone().add(new THREE.Vector3(0, 6.2, 0));
+      const end = endBase.clone().add(new THREE.Vector3(0, 5.8, 0));
+      const control = start.clone().lerp(end, 0.5);
+      control.y = 2.8 + seeded(index, 280) * 1.2;
+      const curve = new THREE.QuadraticBezierCurve3(start, control, end);
+      const vine = new THREE.Mesh(new THREE.TubeGeometry(curve, 12, 0.035, 5, false), vineMaterial);
+      vine.name = 'HangingJungleVine';
+      vine.castShadow = true;
+      this.group.add(vine);
     }
   }
 
@@ -700,13 +1033,13 @@ export class ForestRiverWorld {
     rightAt: (z: number) => number,
     y: number,
   ): THREE.BufferGeometry {
-    const segments = 96;
+    const segments = 144;
     const positions: number[] = [];
     const uvs: number[] = [];
     const indices: number[] = [];
     for (let index = 0; index <= segments; index += 1) {
       const t = index / segments;
-      const z = THREE.MathUtils.lerp(WORLD_MIN_Z, WORLD_MAX_Z, t);
+      const z = THREE.MathUtils.lerp(SCENERY_MIN_Z, WORLD_MAX_Z, t);
       positions.push(leftAt(z), y, z, rightAt(z), y, z);
       uvs.push(0, t * 8, 1, t * 8);
       if (index === segments) continue;
