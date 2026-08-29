@@ -98,6 +98,26 @@ export const stories: Story[] = [
       { title: 'Notice persistence', text: 'Talk about how small, patient steps help Tortoise reach the finish.' },
     ],
   },
+  {
+    slug: 'tortoise-and-tiger',
+    title: 'The Tortoise and the Tiger',
+    eyebrow: 'A new Moonlit story',
+    summary: 'A gentle new story world is being prepared.',
+    description: 'The foundation is in place. Story details and interactions will be added next.',
+    moral: 'To be discovered together.',
+    ageRange: 'Ages 4–8',
+    duration: 'Coming soon',
+    participation: 'Coming soon',
+    entry: '/games/tortoise-and-tiger/index.html',
+    playable: false,
+    runtimeVersion: 1,
+    capabilities: {
+      audio: true,
+      fullscreen: true,
+      restart: true,
+    },
+    guidance: [],
+  },
 ];
 
 export function getStory(slug: string): Story | undefined {
