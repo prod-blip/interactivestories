@@ -2,6 +2,7 @@ const MASTER_VOLUME = 0.3;
 const RIVER_VOLUME = 0.08;
 const CHIRP_MIN_VOLUME = 0.35;
 const CHIRP_VOLUME_RANGE = 0.3;
+const MOBILE_RESUME_TIMEOUT_MS = 1_000;
 
 type LoadState = 'not-requested' | 'fetching' | 'fetched' | 'decoding' | 'decoded' | 'failed';
 
@@ -51,6 +52,7 @@ export class AudioDirector {
   private requested = false;
   private muted = false;
   private paused = false;
+  private contextGeneration = 0;
   private unlockAttempts = 0;
   private chirpState: LoadState = 'not-requested';
   private riverState: LoadState = 'not-requested';
@@ -72,33 +74,53 @@ export class AudioDirector {
   async unlock(): Promise<void> {
     this.unlockAttempts += 1;
     this.lastEvent = 'Trusted interaction received';
+    // Safari can leave a context permanently `interrupted` after app
+    // switching, link handoff, fullscreen, or an audio-session change. Its
+    // original resume promise may never settle, so a later genuine gesture
+    // must be allowed to replace that context and start a fresh attempt.
+    if (this.context && this.getContextState(this.context) === 'interrupted') {
+      this.abandonInterruptedContext();
+      this.unlocking = undefined;
+    }
     if (this.unlocking) return this.unlocking;
     this.lastError = '';
-    this.unlocking = this.performUnlock();
+    const attempt = this.performUnlock();
+    this.unlocking = attempt;
     try {
-      await this.unlocking;
+      await attempt;
     } catch (error: unknown) {
+      if (this.unlocking !== attempt) return;
       // A browser can reject one resume attempt during an iframe or
       // visibility transition. Every later gesture retries this path.
       console.warn('Unable to unlock story audio on this interaction.', error);
       this.lastError = error instanceof Error ? error.message : String(error);
     } finally {
-      this.unlocking = undefined;
+      if (this.unlocking === attempt) this.unlocking = undefined;
     }
   }
 
   private async performUnlock(): Promise<void> {
     if (!this.context) this.createGraph();
+    const context = this.context;
+    const generation = this.contextGeneration;
+    if (!context) return;
     // iOS Safari may report a resumed context but keep it silent until a
     // source has also been started by the same trusted touch. Queueing one
     // inaudible sample here primes the output without changing the mix.
-    this.primeOutput();
-    if (this.context && this.context.state !== 'running' && this.context.state !== 'closed') {
-      await this.context.resume();
+    this.primeOutput(context);
+    if (context.state !== 'running' && context.state !== 'closed') {
+      const resumed = await this.resumeWithTimeout(context);
+      if (generation !== this.contextGeneration || context !== this.context) return;
+      if (!resumed) {
+        this.lastEvent = `Audio resume timed out (${this.getContextState(context)}) — tap again`;
+        return;
+      }
     }
-    this.lastEvent = this.context?.state === 'running'
+    if (generation !== this.contextGeneration || context !== this.context) return;
+    this.lastEvent = context.state === 'running'
       ? 'Audio context is running'
-      : `Audio context remained ${this.context?.state ?? 'unavailable'}`;
+      : `Audio context remained ${this.getContextState(context)} — tap again`;
+    if (context.state !== 'running') return;
     if (this.requested && !this.muted && !this.paused) {
       await Promise.all([
         this.startBirdAmbience(),
@@ -323,6 +345,7 @@ export class AudioDirector {
       ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioContextConstructor) throw new Error('Web Audio is not supported by this browser.');
     this.context = new AudioContextConstructor();
+    this.contextGeneration += 1;
     this.master = this.context.createGain();
     this.master.gain.value = this.muted ? 0 : MASTER_VOLUME;
     this.master.connect(this.context.destination);
@@ -331,15 +354,83 @@ export class AudioDirector {
     this.ambience.connect(this.master);
   }
 
-  private primeOutput(): void {
-    if (!this.context || this.context.state === 'closed') return;
-    const source = this.context.createBufferSource();
-    source.buffer = this.context.createBuffer(1, 1, this.context.sampleRate);
+  private primeOutput(context: AudioContext): void {
+    if (context.state === 'closed') return;
+    const source = context.createBufferSource();
+    source.buffer = context.createBuffer(1, 1, context.sampleRate);
     // Connect the gesture primer straight to the hardware destination. iOS
     // Safari can leave the output route closed when an inaudible primer only
     // travels through the game's gain graph.
-    source.connect(this.context.destination);
+    source.connect(context.destination);
     source.start(0);
+  }
+
+  private async resumeWithTimeout(context: AudioContext): Promise<boolean> {
+    let timeout: number | undefined;
+    const timedOut = new Promise<false>((resolve) => {
+      timeout = window.setTimeout(() => resolve(false), MOBILE_RESUME_TIMEOUT_MS);
+    });
+    try {
+      const resumed = context.resume().then(() => true);
+      return await Promise.race([resumed, timedOut]);
+    } finally {
+      if (timeout !== undefined) window.clearTimeout(timeout);
+    }
+  }
+
+  private getContextState(context: AudioContext): string {
+    // WebKit exposes `interrupted`, although it is not part of TypeScript's
+    // standard AudioContextState union.
+    return String(context.state);
+  }
+
+  private abandonInterruptedContext(): void {
+    const interruptedContext = this.context;
+    this.clearChirpTimer();
+    for (const source of [
+      this.riverSource,
+      this.sniffSource,
+      this.angryGrowlSource,
+    ]) {
+      try {
+        source?.stop();
+      } catch {
+        // A source may already have ended while the audio session changed.
+      }
+    }
+
+    this.contextGeneration += 1;
+    this.context = undefined;
+    this.master = undefined;
+    this.ambience = undefined;
+    this.chirpLoad = undefined;
+    this.chirpBuffers = [];
+    this.hasPlayedChirp = false;
+    this.riverLoad = undefined;
+    this.riverBuffer = undefined;
+    this.riverSource = undefined;
+    this.sniffLoad = undefined;
+    this.sniffBuffer = undefined;
+    this.sniffSource = undefined;
+    this.angryGrowlLoad = undefined;
+    this.angryGrowlBuffer = undefined;
+    this.angryGrowlSource = undefined;
+
+    // The fetched ArrayBuffers are deliberately retained, so rebuilding the
+    // graph requires decoding only and does not download the recordings again.
+    this.chirpState = this.resetDecodeState(this.chirpState);
+    this.riverState = this.resetDecodeState(this.riverState);
+    this.sniffState = this.resetDecodeState(this.sniffState);
+    this.growlState = this.resetDecodeState(this.growlState);
+    this.lastEvent = 'Interrupted context discarded — retrying from this tap';
+    void interruptedContext?.close().catch(() => {
+      // An already interrupted WebKit context may reject close(); it is no
+      // longer referenced and the replacement context remains usable.
+    });
+  }
+
+  private resetDecodeState(state: LoadState): LoadState {
+    return state === 'decoding' || state === 'decoded' ? 'fetched' : state;
   }
 
   private canPlay(): boolean {
