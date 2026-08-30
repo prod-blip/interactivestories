@@ -19,6 +19,7 @@ if (!app) throw new Error('Missing game root.');
 let game: Game | undefined;
 let runtime: StoryRuntime | undefined;
 let introTimers: number[] = [];
+let audioDebugTimer: number | undefined;
 
 // Mobile Safari and Chrome can suspend Web Audio after iframe navigation,
 // fullscreen transitions, tab changes, or an interrupted session. Retry from
@@ -98,6 +99,47 @@ const initialScene: StorySceneId = requestedScene === '14'
     : 'scene-1';
 const initialCheckpoint = query.get('state') ?? undefined;
 
+function installAudioDebugPanel(): void {
+  if (query.get('audioDebug') !== '1') return;
+
+  const panel = document.createElement('aside');
+  const heading = document.createElement('strong');
+  const readout = document.createElement('pre');
+  const testButton = document.createElement('button');
+  panel.className = 'audio-debug';
+  panel.setAttribute('aria-label', 'Audio diagnostics');
+  heading.textContent = 'Audio diagnostics';
+  readout.className = 'audio-debug__readout';
+  testButton.className = 'audio-debug__button';
+  testButton.type = 'button';
+  testButton.textContent = 'Unlock + test tone';
+  testButton.addEventListener('click', () => game?.playAudioDiagnosticTone());
+  panel.append(heading, readout, testButton);
+  document.body.appendChild(panel);
+
+  const update = () => {
+    const state = game?.getAudioDiagnostics();
+    if (!state) {
+      readout.textContent = 'Waiting for game…';
+      return;
+    }
+    readout.textContent = [
+      `context: ${state.contextState}`,
+      `gestures: ${state.unlockAttempts}`,
+      `requested: ${state.requested}`,
+      `muted / paused: ${state.muted} / ${state.paused}`,
+      `chirps: ${state.chirps} (${state.chirpBuffers}) started=${state.chirpStarted}`,
+      `river: ${state.river} started=${state.riverStarted}`,
+      `sniffs: ${state.sniffs} started=${state.sniffStarted}`,
+      `growl: ${state.growl} started=${state.growlStarted}`,
+      `last: ${state.lastEvent}`,
+      `error: ${state.lastError || 'none'}`,
+    ].join('\n');
+  };
+  update();
+  audioDebugTimer = window.setInterval(update, 250);
+}
+
 function setProgress(progress: number, stage: string): void {
   const percentage = Math.round(Math.min(1, Math.max(0, progress)) * 100);
   if (loaderStage) loaderStage.textContent = stage;
@@ -124,6 +166,7 @@ async function bootstrap(): Promise<void> {
       showStoryEnding();
     },
   });
+  installAudioDebugPanel();
   await game.prepare(setProgress);
   game.start();
   if (requestedScene === null) playStoryIntro();
@@ -149,6 +192,7 @@ void bootstrap().catch((error: unknown) => {
 
 window.addEventListener('beforeunload', () => {
   introTimers.forEach((timer) => window.clearTimeout(timer));
+  if (audioDebugTimer !== undefined) window.clearInterval(audioDebugTimer);
   window.removeEventListener('pointerdown', unlockGameAudio);
   window.removeEventListener('touchend', unlockGameAudio);
   window.removeEventListener('keydown', unlockGameAudio);

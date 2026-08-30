@@ -1,6 +1,6 @@
 import type { StoryViewport } from '@moonlit/story-runtime';
 import * as THREE from 'three';
-import { AudioDirector } from './audio/AudioDirector';
+import { AudioDirector, type AudioDiagnostics } from './audio/AudioDirector';
 import { Input } from './input';
 import { EndingBirdFlock } from './objects/EndingBirdFlock';
 import { ForestRiverWorld } from './objects/ForestRiverWorld';
@@ -683,6 +683,14 @@ export class Game {
 
   enableAudio(): void {
     void this.audio.unlock();
+  }
+
+  getAudioDiagnostics(): AudioDiagnostics {
+    return this.audio.getDiagnostics();
+  }
+
+  playAudioDiagnosticTone(): void {
+    void this.audio.playDiagnosticTone();
   }
 
   onViewportChange(_viewport: StoryViewport): void {

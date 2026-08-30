@@ -3,6 +3,27 @@ const RIVER_VOLUME = 0.08;
 const CHIRP_MIN_VOLUME = 0.35;
 const CHIRP_VOLUME_RANGE = 0.3;
 
+type LoadState = 'not-requested' | 'fetching' | 'fetched' | 'decoding' | 'decoded' | 'failed';
+
+export type AudioDiagnostics = {
+  contextState: string;
+  unlockAttempts: number;
+  requested: boolean;
+  muted: boolean;
+  paused: boolean;
+  chirps: LoadState;
+  chirpBuffers: number;
+  chirpStarted: boolean;
+  river: LoadState;
+  riverStarted: boolean;
+  sniffs: LoadState;
+  sniffStarted: boolean;
+  growl: LoadState;
+  growlStarted: boolean;
+  lastEvent: string;
+  lastError: string;
+};
+
 export class AudioDirector {
   private context: AudioContext | undefined;
   private master: GainNode | undefined;
@@ -30,6 +51,15 @@ export class AudioDirector {
   private requested = false;
   private muted = false;
   private paused = false;
+  private unlockAttempts = 0;
+  private chirpState: LoadState = 'not-requested';
+  private riverState: LoadState = 'not-requested';
+  private sniffState: LoadState = 'not-requested';
+  private growlState: LoadState = 'not-requested';
+  private sniffStarted = false;
+  private growlStarted = false;
+  private lastEvent = 'Audio has not been requested';
+  private lastError = '';
 
   start(): void {
     this.requested = true;
@@ -40,7 +70,10 @@ export class AudioDirector {
   }
 
   async unlock(): Promise<void> {
+    this.unlockAttempts += 1;
+    this.lastEvent = 'Trusted interaction received';
     if (this.unlocking) return this.unlocking;
+    this.lastError = '';
     this.unlocking = this.performUnlock();
     try {
       await this.unlocking;
@@ -48,6 +81,7 @@ export class AudioDirector {
       // A browser can reject one resume attempt during an iframe or
       // visibility transition. Every later gesture retries this path.
       console.warn('Unable to unlock story audio on this interaction.', error);
+      this.lastError = error instanceof Error ? error.message : String(error);
     } finally {
       this.unlocking = undefined;
     }
@@ -62,6 +96,9 @@ export class AudioDirector {
     if (this.context && this.context.state !== 'running' && this.context.state !== 'closed') {
       await this.context.resume();
     }
+    this.lastEvent = this.context?.state === 'running'
+      ? 'Audio context is running'
+      : `Audio context remained ${this.context?.state ?? 'unavailable'}`;
     if (this.requested && !this.muted && !this.paused) {
       await Promise.all([
         this.startBirdAmbience(),
@@ -105,6 +142,47 @@ export class AudioDirector {
       void this.startBirdAmbience();
       void this.startRiverAmbience();
     }
+  }
+
+  getDiagnostics(): AudioDiagnostics {
+    return {
+      contextState: this.context?.state ?? 'not-created',
+      unlockAttempts: this.unlockAttempts,
+      requested: this.requested,
+      muted: this.muted,
+      paused: this.paused,
+      chirps: this.chirpState,
+      chirpBuffers: this.chirpBuffers.length,
+      chirpStarted: this.hasPlayedChirp,
+      river: this.riverState,
+      riverStarted: Boolean(this.riverSource),
+      sniffs: this.sniffState,
+      sniffStarted: this.sniffStarted,
+      growl: this.growlState,
+      growlStarted: this.growlStarted,
+      lastEvent: this.lastEvent,
+      lastError: this.lastError,
+    };
+  }
+
+  async playDiagnosticTone(): Promise<void> {
+    await this.unlock();
+    if (!this.canPlay() || !this.context || !this.master) {
+      this.lastEvent = 'Test tone could not start';
+      return;
+    }
+    const now = this.context.currentTime;
+    const oscillator = this.context.createOscillator();
+    const gain = this.context.createGain();
+    oscillator.type = 'sine';
+    oscillator.frequency.value = 660;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.5, now + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+    oscillator.connect(gain).connect(this.master);
+    oscillator.start(now);
+    oscillator.stop(now + 0.52);
+    this.lastEvent = 'Test tone source started';
   }
 
   playStomachGrowl(): void {
@@ -303,13 +381,21 @@ export class AudioDirector {
     const context = this.context;
     if (!context) return;
     try {
+      this.chirpState = 'decoding';
       const recordings = await this.chirpDataLoad!;
+      if (recordings.length === 0) {
+        this.chirpState = 'failed';
+        return;
+      }
       this.chirpBuffers = await Promise.all(
         recordings.map((recording) => context.decodeAudioData(recording.slice(0))),
       );
+      this.chirpState = 'decoded';
     } catch (error: unknown) {
       console.warn('Unable to load bird ambience.', error);
       this.chirpBuffers = [];
+      this.chirpState = 'failed';
+      this.lastError = error instanceof Error ? error.message : String(error);
     }
   }
 
@@ -318,13 +404,17 @@ export class AudioDirector {
     const context = this.context;
     if (!context) return;
     try {
+      this.riverState = 'decoding';
       const recording = await this.riverDataLoad!;
       this.riverBuffer = recording
         ? await context.decodeAudioData(recording.slice(0))
         : undefined;
+      this.riverState = this.riverBuffer ? 'decoded' : 'failed';
     } catch (error: unknown) {
       console.warn('Unable to load river ambience.', error);
       this.riverBuffer = undefined;
+      this.riverState = 'failed';
+      this.lastError = error instanceof Error ? error.message : String(error);
     }
   }
 
@@ -349,6 +439,7 @@ export class AudioDirector {
     source.connect(filter).connect(gain).connect(this.ambience);
     source.start(now);
     this.riverSource = source;
+    this.lastEvent = 'River source started';
   }
 
   private async ensureSniffLoaded(): Promise<void> {
@@ -357,13 +448,17 @@ export class AudioDirector {
     if (!context) return;
     this.sniffLoad ??= (async () => {
       try {
+        this.sniffState = 'decoding';
         const recording = await this.sniffDataLoad!;
         this.sniffBuffer = recording
           ? await context.decodeAudioData(recording.slice(0))
           : undefined;
+        this.sniffState = this.sniffBuffer ? 'decoded' : 'failed';
       } catch (error: unknown) {
         console.warn('Unable to load tiger sniff.', error);
         this.sniffBuffer = undefined;
+        this.sniffState = 'failed';
+        this.lastError = error instanceof Error ? error.message : String(error);
       }
     })();
     await this.sniffLoad;
@@ -382,6 +477,8 @@ export class AudioDirector {
     gain.gain.value = 0.9;
     source.connect(gain).connect(master);
     source.start();
+    this.sniffStarted = true;
+    this.lastEvent = 'Sniff source started';
     source.onended = () => {
       if (this.sniffSource === source) this.sniffSource = undefined;
     };
@@ -394,13 +491,17 @@ export class AudioDirector {
     if (!context) return;
     this.angryGrowlLoad ??= (async () => {
       try {
+        this.growlState = 'decoding';
         const recording = await this.angryGrowlDataLoad!;
         this.angryGrowlBuffer = recording
           ? await context.decodeAudioData(recording.slice(0))
           : undefined;
+        this.growlState = this.angryGrowlBuffer ? 'decoded' : 'failed';
       } catch (error: unknown) {
         console.warn('Unable to load angry tiger growl.', error);
         this.angryGrowlBuffer = undefined;
+        this.growlState = 'failed';
+        this.lastError = error instanceof Error ? error.message : String(error);
       }
     })();
     await this.angryGrowlLoad;
@@ -433,6 +534,8 @@ export class AudioDirector {
 
     source.connect(gain).connect(master);
     source.start(now);
+    this.growlStarted = true;
+    this.lastEvent = 'Growl source started';
     source.onended = () => {
       if (this.angryGrowlSource === source) this.angryGrowlSource = undefined;
     };
@@ -441,26 +544,58 @@ export class AudioDirector {
 
   private preloadAmbience(): void {
     const base = import.meta.env.BASE_URL;
-    this.chirpDataLoad ??= Promise.all([
-      this.fetchAudioData(`${base}shared/audio/birds/chirp-1.wav`),
-      this.fetchAudioData(`${base}shared/audio/birds/chirp-2.wav`),
-      this.fetchAudioData(`${base}shared/audio/birds/chirp-3.wav`),
-    ]).catch((error: unknown) => {
-      console.warn('Unable to preload bird ambience.', error);
-      return [];
-    });
-    this.riverDataLoad ??= this.fetchAudioData(`${base}audio/river-loop.wav`).catch((error: unknown) => {
-      console.warn('Unable to preload river ambience.', error);
-      return undefined;
-    });
-    this.sniffDataLoad ??= this.fetchAudioData(`${base}audio/tiger-two-short-sniffs.wav`).catch((error: unknown) => {
-      console.warn('Unable to preload tiger sniff.', error);
-      return undefined;
-    });
-    this.angryGrowlDataLoad ??= this.fetchAudioData(`${base}audio/tiger-angry-growl.wav`).catch((error: unknown) => {
-      console.warn('Unable to preload angry tiger growl.', error);
-      return undefined;
-    });
+    if (!this.chirpDataLoad) {
+      this.chirpState = 'fetching';
+      this.chirpDataLoad = Promise.all([
+        this.fetchAudioData(`${base}shared/audio/birds/chirp-1.wav`),
+        this.fetchAudioData(`${base}shared/audio/birds/chirp-2.wav`),
+        this.fetchAudioData(`${base}shared/audio/birds/chirp-3.wav`),
+      ]).then((data) => {
+        this.chirpState = 'fetched';
+        return data;
+      }).catch((error: unknown) => {
+        console.warn('Unable to preload bird ambience.', error);
+        this.chirpState = 'failed';
+        this.lastError = error instanceof Error ? error.message : String(error);
+        return [];
+      });
+    }
+    if (!this.riverDataLoad) {
+      this.riverState = 'fetching';
+      this.riverDataLoad = this.fetchAudioData(`${base}audio/river-loop.wav`).then((data) => {
+        this.riverState = 'fetched';
+        return data;
+      }).catch((error: unknown) => {
+        console.warn('Unable to preload river ambience.', error);
+        this.riverState = 'failed';
+        this.lastError = error instanceof Error ? error.message : String(error);
+        return undefined;
+      });
+    }
+    if (!this.sniffDataLoad) {
+      this.sniffState = 'fetching';
+      this.sniffDataLoad = this.fetchAudioData(`${base}audio/tiger-two-short-sniffs.wav`).then((data) => {
+        this.sniffState = 'fetched';
+        return data;
+      }).catch((error: unknown) => {
+        console.warn('Unable to preload tiger sniff.', error);
+        this.sniffState = 'failed';
+        this.lastError = error instanceof Error ? error.message : String(error);
+        return undefined;
+      });
+    }
+    if (!this.angryGrowlDataLoad) {
+      this.growlState = 'fetching';
+      this.angryGrowlDataLoad = this.fetchAudioData(`${base}audio/tiger-angry-growl.wav`).then((data) => {
+        this.growlState = 'fetched';
+        return data;
+      }).catch((error: unknown) => {
+        console.warn('Unable to preload angry tiger growl.', error);
+        this.growlState = 'failed';
+        this.lastError = error instanceof Error ? error.message : String(error);
+        return undefined;
+      });
+    }
   }
 
   private async fetchAudioData(url: string): Promise<ArrayBuffer> {
@@ -488,6 +623,7 @@ export class AudioDirector {
     }
     this.lastChirpIndex = index;
     this.hasPlayedChirp = true;
+    this.lastEvent = 'Bird source started';
 
     const buffer = this.chirpBuffers[index]!;
     const now = context.currentTime;

@@ -1172,3 +1172,36 @@ button {
     animation-duration: 1ms;
   }
 }
+
+.audio-debug {
+  position: fixed;
+  z-index: 10000;
+  top: max(8px, env(safe-area-inset-top));
+  left: max(8px, env(safe-area-inset-left));
+  width: min(360px, calc(100vw - 16px));
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid rgba(145, 238, 183, 0.7);
+  border-radius: 10px;
+  background: rgba(4, 18, 14, 0.94);
+  color: #eaffef;
+  font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+}
+
+.audio-debug__readout {
+  margin: 7px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+}
+
+.audio-debug__button {
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 8px;
+  background: #d9f4c3;
+  color: #102319;
+  font: 700 13px/1.2 system-ui, sans-serif;
+}
