@@ -1,8 +1,14 @@
+import {
+  createStoryAudioContext,
+  decodeStoryAudioData,
+  fetchStoryAudioData,
+  StoryAudioSession,
+} from '@moonlit/story-runtime';
+
 const MASTER_VOLUME = 0.3;
 const RIVER_VOLUME = 0.08;
 const CHIRP_MIN_VOLUME = 0.35;
 const CHIRP_VOLUME_RANGE = 0.3;
-const MOBILE_RESUME_TIMEOUT_MS = 1_000;
 
 type LoadState = 'not-requested' | 'fetching' | 'fetched' | 'decoding' | 'decoded' | 'failed';
 
@@ -29,7 +35,7 @@ export class AudioDirector {
   private context: AudioContext | undefined;
   private master: GainNode | undefined;
   private ambience: GainNode | undefined;
-  private unlocking: Promise<void> | undefined;
+  private readonly audioSession = new StoryAudioSession();
   private chirpDataLoad: Promise<ArrayBuffer[]> | undefined;
   private chirpLoad: Promise<void> | undefined;
   private chirpBuffers: AudioBuffer[] = [];
@@ -52,16 +58,12 @@ export class AudioDirector {
   private requested = false;
   private muted = false;
   private paused = false;
-  private contextGeneration = 0;
-  private unlockAttempts = 0;
   private chirpState: LoadState = 'not-requested';
   private riverState: LoadState = 'not-requested';
   private sniffState: LoadState = 'not-requested';
   private growlState: LoadState = 'not-requested';
   private sniffStarted = false;
   private growlStarted = false;
-  private lastEvent = 'Audio has not been requested';
-  private lastError = '';
 
   start(): void {
     this.requested = true;
@@ -72,55 +74,15 @@ export class AudioDirector {
   }
 
   async unlock(): Promise<void> {
-    this.unlockAttempts += 1;
-    this.lastEvent = 'Trusted interaction received';
-    // Safari can leave a context permanently `interrupted` after app
-    // switching, link handoff, fullscreen, or an audio-session change. Its
-    // original resume promise may never settle, so a later genuine gesture
-    // must be allowed to replace that context and start a fresh attempt.
-    if (this.context && this.getContextState(this.context) === 'interrupted') {
-      this.abandonInterruptedContext();
-      this.unlocking = undefined;
-    }
-    if (this.unlocking) return this.unlocking;
-    this.lastError = '';
-    const attempt = this.performUnlock();
-    this.unlocking = attempt;
-    try {
-      await attempt;
-    } catch (error: unknown) {
-      if (this.unlocking !== attempt) return;
-      // A browser can reject one resume attempt during an iframe or
-      // visibility transition. Every later gesture retries this path.
-      console.warn('Unable to unlock story audio on this interaction.', error);
-      this.lastError = error instanceof Error ? error.message : String(error);
-    } finally {
-      if (this.unlocking === attempt) this.unlocking = undefined;
-    }
-  }
-
-  private async performUnlock(): Promise<void> {
-    if (!this.context) this.createGraph();
-    const context = this.context;
-    const generation = this.contextGeneration;
+    const context = await this.audioSession.unlock({
+      getContext: () => this.context,
+      createContext: () => {
+        this.createGraph();
+        return this.context!;
+      },
+      abandonContext: () => this.abandonInterruptedContext(),
+    });
     if (!context) return;
-    // iOS Safari may report a resumed context but keep it silent until a
-    // source has also been started by the same trusted touch. Queueing one
-    // inaudible sample here primes the output without changing the mix.
-    this.primeOutput(context);
-    if (context.state !== 'running' && context.state !== 'closed') {
-      const resumed = await this.resumeWithTimeout(context);
-      if (generation !== this.contextGeneration || context !== this.context) return;
-      if (!resumed) {
-        this.lastEvent = `Audio resume timed out (${this.getContextState(context)}) — tap again`;
-        return;
-      }
-    }
-    if (generation !== this.contextGeneration || context !== this.context) return;
-    this.lastEvent = context.state === 'running'
-      ? 'Audio context is running'
-      : `Audio context remained ${this.getContextState(context)} — tap again`;
-    if (context.state !== 'running') return;
     if (this.requested && !this.muted && !this.paused) {
       await Promise.all([
         this.startBirdAmbience(),
@@ -141,16 +103,10 @@ export class AudioDirector {
   resume(): void {
     this.paused = false;
     if (this.muted) return;
-    const context = this.context;
-    if (!context) return;
-    void context.resume().then(() => {
-      if (!this.requested) return;
-      void this.startBirdAmbience();
-      void this.startRiverAmbience();
-    }).catch(() => {
-      // A visibility-driven resume may not count as a browser gesture. The
-      // next click/tap/keypress will retry through unlock().
-    });
+    // Visibility changes are routed through the same bounded session. If this
+    // is not a trusted gesture it may time out harmlessly; the next player tap
+    // performs the standard recovery path.
+    void this.unlock();
   }
 
   setMuted(muted: boolean): void {
@@ -167,9 +123,10 @@ export class AudioDirector {
   }
 
   getDiagnostics(): AudioDiagnostics {
+    const session = this.audioSession.getStatus();
     return {
       contextState: this.context?.state ?? 'not-created',
-      unlockAttempts: this.unlockAttempts,
+      unlockAttempts: session.attempts,
       requested: this.requested,
       muted: this.muted,
       paused: this.paused,
@@ -182,15 +139,15 @@ export class AudioDirector {
       sniffStarted: this.sniffStarted,
       growl: this.growlState,
       growlStarted: this.growlStarted,
-      lastEvent: this.lastEvent,
-      lastError: this.lastError,
+      lastEvent: session.event,
+      lastError: session.error,
     };
   }
 
   async playDiagnosticTone(): Promise<void> {
     await this.unlock();
     if (!this.canPlay() || !this.context || !this.master) {
-      this.lastEvent = 'Test tone could not start';
+      this.audioSession.reportEvent('Test tone could not start');
       return;
     }
     const now = this.context.currentTime;
@@ -204,7 +161,7 @@ export class AudioDirector {
     oscillator.connect(gain).connect(this.master);
     oscillator.start(now);
     oscillator.stop(now + 0.52);
-    this.lastEvent = 'Test tone source started';
+    this.audioSession.reportEvent('Test tone source started');
   }
 
   playStomachGrowl(): void {
@@ -341,11 +298,7 @@ export class AudioDirector {
   }
 
   private createGraph(): void {
-    const AudioContextConstructor = window.AudioContext
-      ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioContextConstructor) throw new Error('Web Audio is not supported by this browser.');
-    this.context = new AudioContextConstructor();
-    this.contextGeneration += 1;
+    this.context = createStoryAudioContext();
     this.master = this.context.createGain();
     this.master.gain.value = this.muted ? 0 : MASTER_VOLUME;
     this.master.connect(this.context.destination);
@@ -354,38 +307,7 @@ export class AudioDirector {
     this.ambience.connect(this.master);
   }
 
-  private primeOutput(context: AudioContext): void {
-    if (context.state === 'closed') return;
-    const source = context.createBufferSource();
-    source.buffer = context.createBuffer(1, 1, context.sampleRate);
-    // Connect the gesture primer straight to the hardware destination. iOS
-    // Safari can leave the output route closed when an inaudible primer only
-    // travels through the game's gain graph.
-    source.connect(context.destination);
-    source.start(0);
-  }
-
-  private async resumeWithTimeout(context: AudioContext): Promise<boolean> {
-    let timeout: number | undefined;
-    const timedOut = new Promise<false>((resolve) => {
-      timeout = window.setTimeout(() => resolve(false), MOBILE_RESUME_TIMEOUT_MS);
-    });
-    try {
-      const resumed = context.resume().then(() => true);
-      return await Promise.race([resumed, timedOut]);
-    } finally {
-      if (timeout !== undefined) window.clearTimeout(timeout);
-    }
-  }
-
-  private getContextState(context: AudioContext): string {
-    // WebKit exposes `interrupted`, although it is not part of TypeScript's
-    // standard AudioContextState union.
-    return String(context.state);
-  }
-
   private abandonInterruptedContext(): void {
-    const interruptedContext = this.context;
     this.clearChirpTimer();
     for (const source of [
       this.riverSource,
@@ -399,7 +321,6 @@ export class AudioDirector {
       }
     }
 
-    this.contextGeneration += 1;
     this.context = undefined;
     this.master = undefined;
     this.ambience = undefined;
@@ -422,11 +343,6 @@ export class AudioDirector {
     this.riverState = this.resetDecodeState(this.riverState);
     this.sniffState = this.resetDecodeState(this.sniffState);
     this.growlState = this.resetDecodeState(this.growlState);
-    this.lastEvent = 'Interrupted context discarded — retrying from this tap';
-    void interruptedContext?.close().catch(() => {
-      // An already interrupted WebKit context may reject close(); it is no
-      // longer referenced and the replacement context remains usable.
-    });
   }
 
   private resetDecodeState(state: LoadState): LoadState {
@@ -479,14 +395,14 @@ export class AudioDirector {
         return;
       }
       this.chirpBuffers = await Promise.all(
-        recordings.map((recording) => context.decodeAudioData(recording.slice(0))),
+        recordings.map((recording) => decodeStoryAudioData(context, recording)),
       );
       this.chirpState = 'decoded';
     } catch (error: unknown) {
       console.warn('Unable to load bird ambience.', error);
       this.chirpBuffers = [];
       this.chirpState = 'failed';
-      this.lastError = error instanceof Error ? error.message : String(error);
+      this.audioSession.reportError(error);
     }
   }
 
@@ -498,14 +414,14 @@ export class AudioDirector {
       this.riverState = 'decoding';
       const recording = await this.riverDataLoad!;
       this.riverBuffer = recording
-        ? await context.decodeAudioData(recording.slice(0))
+        ? await decodeStoryAudioData(context, recording)
         : undefined;
       this.riverState = this.riverBuffer ? 'decoded' : 'failed';
     } catch (error: unknown) {
       console.warn('Unable to load river ambience.', error);
       this.riverBuffer = undefined;
       this.riverState = 'failed';
-      this.lastError = error instanceof Error ? error.message : String(error);
+      this.audioSession.reportError(error);
     }
   }
 
@@ -530,7 +446,7 @@ export class AudioDirector {
     source.connect(filter).connect(gain).connect(this.ambience);
     source.start(now);
     this.riverSource = source;
-    this.lastEvent = 'River source started';
+    this.audioSession.reportEvent('River source started');
   }
 
   private async ensureSniffLoaded(): Promise<void> {
@@ -542,14 +458,14 @@ export class AudioDirector {
         this.sniffState = 'decoding';
         const recording = await this.sniffDataLoad!;
         this.sniffBuffer = recording
-          ? await context.decodeAudioData(recording.slice(0))
+          ? await decodeStoryAudioData(context, recording)
           : undefined;
         this.sniffState = this.sniffBuffer ? 'decoded' : 'failed';
       } catch (error: unknown) {
         console.warn('Unable to load tiger sniff.', error);
         this.sniffBuffer = undefined;
         this.sniffState = 'failed';
-        this.lastError = error instanceof Error ? error.message : String(error);
+        this.audioSession.reportError(error);
       }
     })();
     await this.sniffLoad;
@@ -569,7 +485,7 @@ export class AudioDirector {
     source.connect(gain).connect(master);
     source.start();
     this.sniffStarted = true;
-    this.lastEvent = 'Sniff source started';
+    this.audioSession.reportEvent('Sniff source started');
     source.onended = () => {
       if (this.sniffSource === source) this.sniffSource = undefined;
     };
@@ -585,14 +501,14 @@ export class AudioDirector {
         this.growlState = 'decoding';
         const recording = await this.angryGrowlDataLoad!;
         this.angryGrowlBuffer = recording
-          ? await context.decodeAudioData(recording.slice(0))
+          ? await decodeStoryAudioData(context, recording)
           : undefined;
         this.growlState = this.angryGrowlBuffer ? 'decoded' : 'failed';
       } catch (error: unknown) {
         console.warn('Unable to load angry tiger growl.', error);
         this.angryGrowlBuffer = undefined;
         this.growlState = 'failed';
-        this.lastError = error instanceof Error ? error.message : String(error);
+        this.audioSession.reportError(error);
       }
     })();
     await this.angryGrowlLoad;
@@ -626,7 +542,7 @@ export class AudioDirector {
     source.connect(gain).connect(master);
     source.start(now);
     this.growlStarted = true;
-    this.lastEvent = 'Growl source started';
+    this.audioSession.reportEvent('Growl source started');
     source.onended = () => {
       if (this.angryGrowlSource === source) this.angryGrowlSource = undefined;
     };
@@ -638,61 +554,55 @@ export class AudioDirector {
     if (!this.chirpDataLoad) {
       this.chirpState = 'fetching';
       this.chirpDataLoad = Promise.all([
-        this.fetchAudioData(`${base}shared/audio/birds/chirp-1.wav`),
-        this.fetchAudioData(`${base}shared/audio/birds/chirp-2.wav`),
-        this.fetchAudioData(`${base}shared/audio/birds/chirp-3.wav`),
+        fetchStoryAudioData(`${base}shared/audio/birds/chirp-1.wav`),
+        fetchStoryAudioData(`${base}shared/audio/birds/chirp-2.wav`),
+        fetchStoryAudioData(`${base}shared/audio/birds/chirp-3.wav`),
       ]).then((data) => {
         this.chirpState = 'fetched';
         return data;
       }).catch((error: unknown) => {
         console.warn('Unable to preload bird ambience.', error);
         this.chirpState = 'failed';
-        this.lastError = error instanceof Error ? error.message : String(error);
+        this.audioSession.reportError(error);
         return [];
       });
     }
     if (!this.riverDataLoad) {
       this.riverState = 'fetching';
-      this.riverDataLoad = this.fetchAudioData(`${base}audio/river-loop.wav`).then((data) => {
+      this.riverDataLoad = fetchStoryAudioData(`${base}audio/river-loop.wav`).then((data) => {
         this.riverState = 'fetched';
         return data;
       }).catch((error: unknown) => {
         console.warn('Unable to preload river ambience.', error);
         this.riverState = 'failed';
-        this.lastError = error instanceof Error ? error.message : String(error);
+        this.audioSession.reportError(error);
         return undefined;
       });
     }
     if (!this.sniffDataLoad) {
       this.sniffState = 'fetching';
-      this.sniffDataLoad = this.fetchAudioData(`${base}audio/tiger-two-short-sniffs.wav`).then((data) => {
+      this.sniffDataLoad = fetchStoryAudioData(`${base}audio/tiger-two-short-sniffs.wav`).then((data) => {
         this.sniffState = 'fetched';
         return data;
       }).catch((error: unknown) => {
         console.warn('Unable to preload tiger sniff.', error);
         this.sniffState = 'failed';
-        this.lastError = error instanceof Error ? error.message : String(error);
+        this.audioSession.reportError(error);
         return undefined;
       });
     }
     if (!this.angryGrowlDataLoad) {
       this.growlState = 'fetching';
-      this.angryGrowlDataLoad = this.fetchAudioData(`${base}audio/tiger-angry-growl.wav`).then((data) => {
+      this.angryGrowlDataLoad = fetchStoryAudioData(`${base}audio/tiger-angry-growl.wav`).then((data) => {
         this.growlState = 'fetched';
         return data;
       }).catch((error: unknown) => {
         console.warn('Unable to preload angry tiger growl.', error);
         this.growlState = 'failed';
-        this.lastError = error instanceof Error ? error.message : String(error);
+        this.audioSession.reportError(error);
         return undefined;
       });
     }
-  }
-
-  private async fetchAudioData(url: string): Promise<ArrayBuffer> {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Unable to load ${url}: ${response.status}`);
-    return response.arrayBuffer();
   }
 
   private scheduleNextChirp(): void {
@@ -714,7 +624,7 @@ export class AudioDirector {
     }
     this.lastChirpIndex = index;
     this.hasPlayedChirp = true;
-    this.lastEvent = 'Bird source started';
+    this.audioSession.reportEvent('Bird source started');
 
     const buffer = this.chirpBuffers[index]!;
     const now = context.currentTime;

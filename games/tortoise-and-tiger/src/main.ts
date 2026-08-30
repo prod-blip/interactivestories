@@ -21,9 +21,8 @@ let runtime: StoryRuntime | undefined;
 let introTimers: number[] = [];
 let audioDebugTimer: number | undefined;
 
-// Mobile Safari and Chrome can suspend Web Audio after iframe navigation,
-// fullscreen transitions, tab changes, or an interrupted session. Retry from
-// every trusted interaction; AudioDirector safely reuses the existing graph.
+// Retry from every trusted interaction. The shared audio session safely
+// rebuilds iPhone/iPad contexts after app handoff or interruption.
 const unlockGameAudio = () => game?.enableAudio();
 window.addEventListener('pointerdown', unlockGameAudio, { passive: true });
 window.addEventListener('touchend', unlockGameAudio, { passive: true });

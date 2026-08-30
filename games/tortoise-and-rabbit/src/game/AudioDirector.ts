@@ -1,3 +1,9 @@
+import {
+  createStoryAudioContext,
+  loadStoryAudioBuffer,
+  StoryAudioSession,
+} from '@moonlit/story-runtime';
+
 export class AudioDirector {
   private context: AudioContext | null = null;
   private master: GainNode | null = null;
@@ -25,27 +31,22 @@ export class AudioDirector {
   private wildlifeTimer = 0;
   private braggingTimer = 0;
   private braggingActive = false;
-  private startPromise: Promise<void> | null = null;
+  private readonly audioSession = new StoryAudioSession();
   private started = false;
   private disposed = false;
   private muted = false;
 
-  start(): Promise<void> {
+  async start(): Promise<void> {
     if (this.disposed) return Promise.resolve();
-    if (this.started) return this.resumeFromGesture();
-    this.startPromise ??= this.startInternal().catch((error: unknown) => {
-      // Safari may reject an automatic resume before the first direct gesture.
-      // Clear the in-flight attempt so the next pointer/key gesture can retry.
-      this.startPromise = null;
-      throw error;
+    const context = await this.audioSession.unlock({
+      getContext: () => this.context,
+      createContext: () => {
+        this.createGraph();
+        return this.context!;
+      },
+      abandonContext: () => this.abandonInterruptedContext(),
     });
-    return this.startPromise;
-  }
-
-  private async startInternal(): Promise<void> {
-    if (!this.context) this.createGraph();
-    if (!this.context) return;
-    await this.resumeFromGesture();
+    if (!context) return;
     if (this.started) return;
     this.started = true;
     this.chirpLoad ??= this.loadBirdChirps();
@@ -65,6 +66,7 @@ export class AudioDirector {
     if (this.disposed) return;
     this.scheduleBirdCall();
     this.wildlifeTimer = window.setInterval(() => this.scheduleBirdCall(), 6800);
+    if (this.braggingActive) this.scheduleBraggingFlourish(250);
   }
 
   async pause(): Promise<void> {
@@ -72,7 +74,7 @@ export class AudioDirector {
   }
 
   async resume(): Promise<void> {
-    await this.resumeFromGesture();
+    await this.start();
   }
 
   setMuted(muted: boolean): void {
@@ -323,21 +325,48 @@ export class AudioDirector {
   }
 
   private createGraph(): void {
-    this.context = new AudioContext();
+    this.context = createStoryAudioContext();
     this.master = this.context.createGain();
     this.master.gain.value = this.muted ? 0 : 0.62;
     this.master.connect(this.context.destination);
   }
 
-  private async resumeFromGesture(): Promise<void> {
-    if (!this.context || this.disposed) return;
-    // iPhone/iPad Safari may require a source to be started synchronously in
-    // the trusted touch handler before resume() will open the output route.
-    const primer = this.context.createBufferSource();
-    primer.buffer = this.context.createBuffer(1, 1, this.context.sampleRate);
-    primer.connect(this.context.destination);
-    primer.start();
-    if (this.context.state !== 'running') await this.context.resume();
+  private abandonInterruptedContext(): void {
+    window.clearInterval(this.wildlifeTimer);
+    window.clearTimeout(this.braggingTimer);
+    this.wildlifeTimer = 0;
+    this.braggingTimer = 0;
+    for (const source of [
+      this.snoreSource,
+      this.braggingSource,
+      this.finalChaseSource,
+      this.victorySource,
+    ]) {
+      try { source?.stop(); } catch { /* The source may already have ended. */ }
+    }
+    this.context = null;
+    this.master = null;
+    this.started = false;
+    this.chirpLoad = null;
+    this.chirpBuffers = [];
+    this.braggingLoad = null;
+    this.braggingBuffer = null;
+    this.braggingSource = null;
+    this.braggingGain = null;
+    this.startledLoad = null;
+    this.startledBuffer = null;
+    this.finalChaseLoad = null;
+    this.finalChaseBuffer = null;
+    this.finalChaseSource = null;
+    this.finalChaseGain = null;
+    this.snoreLoad = null;
+    this.snoreBuffer = null;
+    this.snoreSource = null;
+    this.snoreGain = null;
+    this.victoryLoad = null;
+    this.victoryBuffer = null;
+    this.victorySource = null;
+    this.victoryGain = null;
   }
 
   private scheduleBirdCall(): void {
@@ -438,9 +467,7 @@ export class AudioDirector {
 
   private async loadBuffer(url: string): Promise<AudioBuffer> {
     if (!this.context) throw new Error('Audio context is not ready.');
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Unable to load ${url}: ${response.status}`);
-    return this.context.decodeAudioData(await response.arrayBuffer());
+    return loadStoryAudioBuffer(this.context, url);
   }
 
   private scheduleBraggingFlourish(delay: number): void {

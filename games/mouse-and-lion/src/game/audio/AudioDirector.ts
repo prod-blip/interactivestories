@@ -1,7 +1,14 @@
+import {
+  createStoryAudioContext,
+  loadStoryAudioBuffer,
+  StoryAudioSession,
+} from '@moonlit/story-runtime';
+
 type OscillatorShape = OscillatorType;
 
 export class AudioDirector {
   private context: AudioContext | null = null;
+  private readonly audioSession = new StoryAudioSession();
   private master: GainNode | null = null;
   private ambienceBus: GainNode | null = null;
   private musicBus: GainNode | null = null;
@@ -26,17 +33,15 @@ export class AudioDirector {
 
   async start(): Promise<void> {
     if (this.disposed) return;
-    if (!this.context) this.createAudioGraph();
-    if (!this.context) return;
-
-    // iPadOS can create the context in a suspended/interrupted state and can
-    // suspend it again after fullscreen or an app interruption. Prime the
-    // output and resume directly from each user gesture before checking the
-    // one-time soundscape setup below.
-    if (this.context.state !== 'running') {
-      this.primeAudioOutput();
-      await this.context.resume();
-    }
+    const context = await this.audioSession.unlock({
+      getContext: () => this.context,
+      createContext: () => {
+        this.createAudioGraph();
+        return this.context!;
+      },
+      abandonContext: () => this.abandonInterruptedContext(),
+    });
+    if (!context) return;
     if (this.started) return;
     this.started = true;
     this.startForestAmbience();
@@ -52,7 +57,7 @@ export class AudioDirector {
   }
 
   async resume(): Promise<void> {
-    if (this.context && this.context.state !== 'running') await this.context.resume();
+    await this.start();
   }
 
   setMuted(muted: boolean): void {
@@ -60,15 +65,6 @@ export class AudioDirector {
     if (!this.master || !this.context) return;
     this.master.gain.cancelScheduledValues(this.context.currentTime);
     this.master.gain.setTargetAtTime(muted ? 0 : 0.72, this.context.currentTime, 0.04);
-  }
-
-  private primeAudioOutput(): void {
-    if (!this.context) return;
-    const buffer = this.context.createBuffer(1, 1, this.context.sampleRate);
-    const source = this.context.createBufferSource();
-    source.buffer = buffer;
-    source.connect(this.context.destination);
-    source.start();
   }
 
   update(delta: number, traveled: number, chewing: boolean): void {
@@ -243,7 +239,7 @@ export class AudioDirector {
   }
 
   private createAudioGraph(): void {
-    this.context = new AudioContext();
+    this.context = createStoryAudioContext();
     this.master = this.context.createGain();
     this.ambienceBus = this.context.createGain();
     this.musicBus = this.context.createGain();
@@ -268,13 +264,32 @@ export class AudioDirector {
     }
   }
 
+  private abandonInterruptedContext(): void {
+    if (this.musicTimer) window.clearInterval(this.musicTimer);
+    this.musicTimer = 0;
+    for (const source of this.ambienceSources) {
+      try { source.stop(); } catch { /* The source may already have ended. */ }
+    }
+    this.ambienceSources.length = 0;
+    this.context = null;
+    this.master = null;
+    this.ambienceBus = null;
+    this.musicBus = null;
+    this.effectsBus = null;
+    this.noiseBuffer = null;
+    this.lionRoarBuffer = null;
+    this.trappedLionBuffer = null;
+    this.started = false;
+    this.musicPhraseEndsAt = 0;
+  }
+
   private async loadLionRoar(): Promise<void> {
     if (!this.context || this.lionRoarBuffer) return;
     try {
-      const response = await fetch(`${import.meta.env.BASE_URL}audio/sfx/lion-roar.ogg`);
-      if (!response.ok) throw new Error(`Unable to load lion roar: ${response.status}`);
-      const encodedAudio = await response.arrayBuffer();
-      this.lionRoarBuffer = await this.context.decodeAudioData(encodedAudio);
+      this.lionRoarBuffer = await loadStoryAudioBuffer(
+        this.context,
+        `${import.meta.env.BASE_URL}audio/sfx/lion-roar.ogg`,
+      );
     } catch (error) {
       console.warn('Using synthesized lion roar fallback.', error);
     }
@@ -283,10 +298,10 @@ export class AudioDirector {
   private async loadTrappedLionVoice(): Promise<void> {
     if (!this.context || this.trappedLionBuffer) return;
     try {
-      const response = await fetch(`${import.meta.env.BASE_URL}audio/sfx/lion-trapped.ogg`);
-      if (!response.ok) throw new Error(`Unable to load trapped lion voice: ${response.status}`);
-      const encodedAudio = await response.arrayBuffer();
-      this.trappedLionBuffer = await this.context.decodeAudioData(encodedAudio);
+      this.trappedLionBuffer = await loadStoryAudioBuffer(
+        this.context,
+        `${import.meta.env.BASE_URL}audio/sfx/lion-trapped.ogg`,
+      );
     } catch (error) {
       console.warn('Using synthesized trapped lion fallback.', error);
     }
