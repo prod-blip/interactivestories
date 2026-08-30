@@ -10,12 +10,23 @@ const loaderPercent = loader?.querySelector<HTMLElement>('.loader__percent');
 const retryButton = loader?.querySelector<HTMLButtonElement>('.loader__retry');
 const storyIntro = document.querySelector<HTMLElement>('#story-intro');
 const titleCard = storyIntro?.querySelector<HTMLElement>('.story-intro__title-card');
+const storyEnding = document.querySelector<HTMLElement>('#story-ending');
+const playAgainButton = storyEnding?.querySelector<HTMLButtonElement>('[data-action="restart"]');
+const mainMenuButton = storyEnding?.querySelector<HTMLButtonElement>('[data-action="menu"]');
 
 if (!app) throw new Error('Missing game root.');
 
 let game: Game | undefined;
 let runtime: StoryRuntime | undefined;
 let introTimers: number[] = [];
+
+// Mobile Safari and Chrome can suspend Web Audio after iframe navigation,
+// fullscreen transitions, tab changes, or an interrupted session. Retry from
+// every trusted interaction; AudioDirector safely reuses the existing graph.
+const unlockGameAudio = () => game?.enableAudio();
+window.addEventListener('pointerdown', unlockGameAudio, { passive: true });
+window.addEventListener('touchend', unlockGameAudio, { passive: true });
+window.addEventListener('keydown', unlockGameAudio);
 
 function playStoryIntro(): void {
   introTimers.forEach((timer) => window.clearTimeout(timer));
@@ -34,6 +45,18 @@ function playStoryIntro(): void {
       storyIntro.setAttribute('aria-hidden', 'true');
     }, 4_250),
   );
+}
+
+function restartStory(): void {
+  storyEnding?.classList.remove('is-visible');
+  game?.restart();
+  runtime?.markReady();
+  if (requestedScene === null) playStoryIntro();
+}
+
+function showStoryEnding(): void {
+  storyEnding?.classList.add('is-visible');
+  window.setTimeout(() => playAgainButton?.focus({ preventScroll: true }), 850);
 }
 
 const query = new URLSearchParams(window.location.search);
@@ -87,10 +110,7 @@ async function bootstrap(): Promise<void> {
   runtime = createStoryRuntime('tortoise-and-tiger', {
     pause: () => game?.pause(),
     resume: () => game?.resume(),
-    restart: () => {
-      game?.restart();
-      if (requestedScene === null) playStoryIntro();
-    },
+    restart: restartStory,
     setMuted: (muted) => game?.setMuted(muted),
     onViewportChange: (viewport) => game?.onViewportChange(viewport),
   });
@@ -99,7 +119,10 @@ async function bootstrap(): Promise<void> {
     initialScene,
     initialCheckpoint,
     storyMode: requestedScene === null,
-    onComplete: () => runtime?.markCompleted(),
+    onComplete: () => {
+      runtime?.markCompleted();
+      showStoryEnding();
+    },
   });
   await game.prepare(setProgress);
   game.start();
@@ -111,6 +134,11 @@ async function bootstrap(): Promise<void> {
 }
 
 retryButton?.addEventListener('click', () => window.location.reload());
+playAgainButton?.addEventListener('click', restartStory);
+mainMenuButton?.addEventListener('click', () => {
+  if (window.parent !== window) runtime?.requestExit();
+  else window.location.assign('/');
+});
 
 void bootstrap().catch((error: unknown) => {
   console.error(error);
@@ -121,6 +149,9 @@ void bootstrap().catch((error: unknown) => {
 
 window.addEventListener('beforeunload', () => {
   introTimers.forEach((timer) => window.clearTimeout(timer));
+  window.removeEventListener('pointerdown', unlockGameAudio);
+  window.removeEventListener('touchend', unlockGameAudio);
+  window.removeEventListener('keydown', unlockGameAudio);
   runtime?.dispose();
   game?.dispose();
 });

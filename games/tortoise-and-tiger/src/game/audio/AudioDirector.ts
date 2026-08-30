@@ -254,10 +254,13 @@ export class AudioDirector {
   }
 
   private primeOutput(): void {
-    if (!this.context || !this.master || this.context.state === 'closed') return;
+    if (!this.context || this.context.state === 'closed') return;
     const source = this.context.createBufferSource();
     source.buffer = this.context.createBuffer(1, 1, this.context.sampleRate);
-    source.connect(this.master);
+    // Connect the gesture primer straight to the hardware destination. iOS
+    // Safari can leave the output route closed when an inaudible primer only
+    // travels through the game's gain graph.
+    source.connect(this.context.destination);
     source.start(0);
   }
 

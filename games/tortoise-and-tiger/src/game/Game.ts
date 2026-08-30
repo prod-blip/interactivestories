@@ -681,6 +681,10 @@ export class Game {
     this.audio.setMuted(muted);
   }
 
+  enableAudio(): void {
+    void this.audio.unlock();
+  }
+
   onViewportChange(_viewport: StoryViewport): void {
     this.resize();
   }
@@ -3626,7 +3630,7 @@ export class Game {
       this.ui.reset();
       if (!this.storyComplete) {
         this.storyComplete = true;
-        if (this.storyMode) this.onComplete?.();
+        this.onComplete?.();
       }
     }
   }
