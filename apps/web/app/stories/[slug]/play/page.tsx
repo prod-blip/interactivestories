@@ -12,6 +12,7 @@ export default async function PlayPage({ params }: { params: Promise<{ slug: str
 
   return (
     <GameFrame
+      storyId={story.slug}
       title={story.title}
       storyHref={`/stories/${story.slug}`}
       src={story.entry}

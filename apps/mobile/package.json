@@ -1,0 +1,28 @@
+{
+  "name": "@moonlit/mobile",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Native Android container for Moonlit Stories",
+  "scripts": {
+    "assets:android": "node scripts/generate-android-assets.mjs",
+    "bundle:web": "npm run build --prefix ../.. && node scripts/prepare-web.mjs",
+    "sync": "npm run bundle:web && cap sync android",
+    "open": "cap open android",
+    "build:debug": "npm run sync && node scripts/run-gradle.mjs assembleDebug",
+    "build:bundle": "npm run sync && node scripts/run-gradle.mjs bundleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.1",
+    "@capacitor/app": "8.0.1",
+    "@capacitor/core": "8.5.1",
+    "@capacitor/splash-screen": "8.0.1",
+    "@capacitor/status-bar": "8.0.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.1",
+    "sharp": "0.35.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

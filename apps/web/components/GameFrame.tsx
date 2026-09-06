@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Brand } from './Brand';
 
 type GameFrameProps = {
+  storyId: string;
   title: string;
   storyHref: string;
   src: string;
@@ -19,7 +20,9 @@ type GameFrameProps = {
 
 type PlayerState = 'loading' | 'ready' | 'completed' | 'error';
 
-export function GameFrame({ title, storyHref, src, capabilities }: GameFrameProps) {
+const COMPLETED_STORIES_KEY = 'moonlit:completed-stories';
+
+export function GameFrame({ storyId, title, storyHref, src, capabilities }: GameFrameProps) {
   const frameWrap = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLIFrameElement>(null);
   const host = useRef<StoryHost>(null);
@@ -47,6 +50,13 @@ export function GameFrame({ title, storyHref, src, capabilities }: GameFrameProp
       },
       onCompleted() {
         setPlayerState('completed');
+        try {
+          const stored = JSON.parse(window.localStorage.getItem(COMPLETED_STORIES_KEY) ?? '[]');
+          const completedStories = Array.isArray(stored) ? stored.filter((value): value is string => typeof value === 'string') : [];
+          window.localStorage.setItem(COMPLETED_STORIES_KEY, JSON.stringify([...new Set([...completedStories, storyId])]));
+        } catch {
+          // Completion tracking is a convenience; it must never interrupt play.
+        }
       },
       onExitRequested() {
         window.location.assign(storyHref);
@@ -78,6 +88,12 @@ export function GameFrame({ title, storyHref, src, capabilities }: GameFrameProp
       else storyHost.resume();
     };
 
+    const pauseFromNative = () => storyHost.pause();
+    const resumeFromNative = () => {
+      storyHost.resume();
+      settleViewport();
+    };
+
     root.classList.add('is-playing');
     window.scrollTo(0, 0);
     settleViewport();
@@ -86,6 +102,8 @@ export function GameFrame({ title, storyHref, src, capabilities }: GameFrameProp
     window.addEventListener('orientationchange', settleViewport);
     document.addEventListener('fullscreenchange', settleViewport);
     document.addEventListener('visibilitychange', syncVisibility);
+    document.addEventListener('moonlit:native-pause', pauseFromNative);
+    document.addEventListener('moonlit:native-resume', resumeFromNative);
     viewport?.addEventListener('resize', syncViewport);
     viewport?.addEventListener('scroll', syncViewport);
 
@@ -100,10 +118,12 @@ export function GameFrame({ title, storyHref, src, capabilities }: GameFrameProp
       window.removeEventListener('orientationchange', settleViewport);
       document.removeEventListener('fullscreenchange', settleViewport);
       document.removeEventListener('visibilitychange', syncVisibility);
+      document.removeEventListener('moonlit:native-pause', pauseFromNative);
+      document.removeEventListener('moonlit:native-resume', resumeFromNative);
       viewport?.removeEventListener('resize', syncViewport);
       viewport?.removeEventListener('scroll', syncViewport);
     };
-  }, [storyHref]);
+  }, [storyHref, storyId]);
 
   async function enterFullscreen() {
     if (frameWrap.current?.requestFullscreen) await frameWrap.current.requestFullscreen();

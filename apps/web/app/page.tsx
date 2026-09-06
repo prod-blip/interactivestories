@@ -15,6 +15,7 @@ import {
 import { Header } from '@/components/Header';
 import { Starfield } from '@/components/Starfield';
 import { StoryArtwork } from '@/components/StoryArtwork';
+import { StoryProgressBadge } from '@/components/StoryProgressBadge';
 import { stories } from '@/lib/stories';
 
 export default function Home() {
@@ -78,7 +79,7 @@ export default function Home() {
               <article className="featured-story" key={story.slug}>
                 <Link className="story-art-link" href={`/stories/${story.slug}`} aria-label={`Open ${story.title}`}>
                   <StoryArtwork variant={story.slug === 'crow-and-pitcher' ? 'crow-and-pitcher' : story.slug === 'tortoise-and-rabbit' ? 'tortoise-and-rabbit' : 'mouse-and-lion'} />
-                  <span className="story-status"><span /> Ready to play</span>
+                  <StoryProgressBadge slug={story.slug} playable={story.playable} />
                 </Link>
                 <div className="story-copy">
                   <p className="eyebrow">{story.eyebrow}</p>

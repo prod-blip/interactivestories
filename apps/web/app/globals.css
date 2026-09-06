@@ -25,6 +25,15 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
+.native-app,
+.native-app body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+.native-app body {
+  min-height: 100dvh;
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+}
 a { color: inherit; text-decoration: none; }
 button { color: inherit; font: inherit; }
 .shell { width: min(1160px, calc(100% - 44px)); margin-inline: auto; }
@@ -127,6 +136,7 @@ h1, h2 { margin: 0; font-family: var(--serif); font-weight: 400; line-height: 1.
 .story-art-link { position: relative; min-height: 500px; overflow: hidden; }
 .story-status { position: absolute; left: 24px; top: 24px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid rgba(255,255,255,.16); border-radius: 999px; background: rgba(17,23,40,.58); color: #e7e3d9; backdrop-filter: blur(10px); font-size: 11px; letter-spacing: .05em; }
 .story-status span { width: 6px; height: 6px; border-radius: 50%; background: #a9c49f; box-shadow: 0 0 7px #a9c49f; }
+.story-status--completed span { background: var(--cream); box-shadow: 0 0 7px var(--cream); }
 .story-copy { align-self: center; padding: 56px; }
 .story-copy h3 { margin: 0; font-family: var(--serif); font-size: clamp(40px, 4vw, 59px); font-weight: 400; line-height: 1.04; }
 .story-summary { margin: 22px 0; color: #666a6f; font-family: var(--serif); font-size: 18px; line-height: 1.6; }
@@ -284,6 +294,29 @@ html:fullscreen .play-shell { width: 100%; height: 100%; }
 html:fullscreen .play-shell { display: block; padding: 0; }
 html:fullscreen .play-header { display: none; }
 html:fullscreen .game-frame-wrap { width: 100%; height: 100%; border: 0; border-radius: 0; }
+
+/* Android opens as a focused story library, not a copy of the public landing page. */
+.native-app body:not(.is-playing) .hero-grid,
+.native-app body:not(.is-playing) .promise-row,
+.native-app body:not(.is-playing) .approach-section,
+.native-app body:not(.is-playing) .ritual-section,
+.native-app body:not(.is-playing) footer { display: none; }
+.native-app body:not(.is-playing) .hero { min-height: 64px; background: var(--night-deep); }
+.native-app body:not(.is-playing) .header-inner { height: 64px; }
+.native-app body:not(.is-playing) .stories-section {
+  min-height: calc(100dvh - 64px);
+  padding-top: clamp(38px, 7vw, 72px);
+  padding-bottom: calc(54px + env(safe-area-inset-bottom));
+}
+.native-app body:not(.is-playing) .heading-row > p { display: none; }
+.native-app body:not(.is-playing) .heading-row { grid-template-columns: 1fr; margin-bottom: 32px; }
+.native-app .play-shell {
+  padding-top: env(safe-area-inset-top);
+  padding-right: max(5px, env(safe-area-inset-right));
+  padding-bottom: max(5px, env(safe-area-inset-bottom));
+  padding-left: max(5px, env(safe-area-inset-left));
+}
+.native-app .play-actions button[aria-label='Enter full screen'] { display: none; }
 
 @media (max-width: 900px) {
   .hero { min-height: auto; }
