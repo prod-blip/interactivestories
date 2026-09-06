@@ -34,6 +34,13 @@ let lastCheckpointTime = 0;
 let adaptiveThoughtIndex = 0;
 let adaptiveThoughts: readonly string[] = [];
 
+// Retry from every trusted interaction. The shared audio session safely
+// rebuilds iPhone/iPad contexts after app handoff or interruption.
+const unlockGameAudio = () => game?.enableAudio();
+window.addEventListener('pointerdown', unlockGameAudio, { passive: true });
+window.addEventListener('touchend', unlockGameAudio, { passive: true });
+window.addEventListener('keydown', unlockGameAudio);
+
 const SLOW_FIRST_RACE_THOUGHTS = [
   'One step at a time.',
   'I just have to keep going.',
@@ -399,13 +406,6 @@ async function bootstrap(): Promise<void> {
     onViewportChange: (viewport) => game?.setReducedMotion(viewport.reducedMotion),
   });
 
-  // Keep retrying from trusted gestures: iOS Safari can suspend Web Audio
-  // after navigation, fullscreen changes, or an app interruption.
-  const unlockAudio = () => game?.enableAudio();
-  window.addEventListener('pointerdown', unlockAudio, { passive: true });
-  window.addEventListener('touchend', unlockAudio, { passive: true });
-  window.addEventListener('keydown', unlockAudio);
-
   await game.prepare((progress) => {
     if (loaderBar) loaderBar.style.transform = `scaleX(${progress})`;
     runtime?.reportLoading(progress, 'Growing the sunny clearing');
@@ -430,6 +430,9 @@ void bootstrap().catch((error: unknown) => {
 window.addEventListener('beforeunload', () => {
   window.clearTimeout(narratorLineTimer);
   stopAdaptiveDialogue();
+  window.removeEventListener('pointerdown', unlockGameAudio);
+  window.removeEventListener('touchend', unlockGameAudio);
+  window.removeEventListener('keydown', unlockGameAudio);
   runtime?.dispose();
   game?.dispose();
 });

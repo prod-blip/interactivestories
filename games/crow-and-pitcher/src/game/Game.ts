@@ -200,6 +200,12 @@ export class Game {
     this.audio.setMuted(muted);
   }
 
+  enableAudio(): void {
+    void this.audio.start().catch((error: unknown) => {
+      console.warn('Unable to start story audio.', error);
+    });
+  }
+
   onViewportChange(viewport: StoryViewport): void {
     this.reducedMotion = viewport.reducedMotion;
     this.crow.setReducedMotion(viewport.reducedMotion);

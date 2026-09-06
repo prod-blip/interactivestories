@@ -26,7 +26,6 @@ export class Input {
   private touchCenterX = 0;
   private touchCenterY = 0;
   private movementEnabled = false;
-  private gestureReceived = false;
 
   readonly state: MovementState = {
     left: false,
@@ -39,7 +38,7 @@ export class Input {
 
   constructor(
     private readonly target: HTMLElement,
-    private readonly onFirstGesture: () => void,
+    private readonly onGesture: () => void,
   ) {
     this.touchControls.className = 'touch-controls touch-controls--disabled';
     this.joystickBase.className = 'touch-controls__base';
@@ -50,6 +49,9 @@ export class Input {
 
     this.target.addEventListener('pointerdown', this.handlePointerDown);
     this.target.addEventListener('pointermove', this.handlePointerMove);
+    // Older iOS Safari versions do not consistently dispatch Pointer Events
+    // inside an iframe. Keep a touch gesture fallback solely for audio unlock.
+    window.addEventListener('touchstart', this.handleTouchStart, { passive: true });
     window.addEventListener('pointerup', this.handlePointerUp);
     window.addEventListener('pointercancel', this.handlePointerCancel);
     window.addEventListener('keydown', this.handleKeyDown);
@@ -71,6 +73,7 @@ export class Input {
   dispose(): void {
     this.target.removeEventListener('pointerdown', this.handlePointerDown);
     this.target.removeEventListener('pointermove', this.handlePointerMove);
+    window.removeEventListener('touchstart', this.handleTouchStart);
     window.removeEventListener('pointerup', this.handlePointerUp);
     window.removeEventListener('pointercancel', this.handlePointerCancel);
     window.removeEventListener('keydown', this.handleKeyDown);
@@ -81,9 +84,10 @@ export class Input {
   }
 
   private registerGesture(): void {
-    if (this.gestureReceived) return;
-    this.gestureReceived = true;
-    this.onFirstGesture();
+    // Retry on every genuine interaction. Some browsers can reject an initial
+    // audio resume during iframe/visibility transitions; one failed attempt
+    // must not leave the whole story silent for the rest of the session.
+    this.onGesture();
   }
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
@@ -115,6 +119,8 @@ export class Input {
     this.target.setPointerCapture(event.pointerId);
     this.updateJoystick(event.clientX, event.clientY);
   };
+
+  private readonly handleTouchStart = (): void => this.registerGesture();
 
   private readonly handlePointerMove = (event: PointerEvent): void => {
     if (event.pointerId !== this.touchPointerId) return;

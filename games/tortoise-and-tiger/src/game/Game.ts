@@ -1,6 +1,6 @@
 import type { StoryViewport } from '@moonlit/story-runtime';
 import * as THREE from 'three';
-import { AudioDirector } from './audio/AudioDirector';
+import { AudioDirector, type AudioDiagnostics } from './audio/AudioDirector';
 import { Input } from './input';
 import { EndingBirdFlock } from './objects/EndingBirdFlock';
 import { ForestRiverWorld } from './objects/ForestRiverWorld';
@@ -362,7 +362,7 @@ export class Game {
   private readonly ui: StoryPopupUI;
   private readonly shellUi: ShellHideUI;
   private readonly riverCompass: RiverCompassUI;
-  private readonly sun = new THREE.DirectionalLight(0xffefc5, 3.15);
+  private readonly sun = new THREE.DirectionalLight(0xffe5ad, 2.72);
   private readonly cameraPositionCurve: THREE.CatmullRomCurve3;
   private readonly cameraTargetCurve: THREE.CatmullRomCurve3;
   private readonly cameraTarget = new THREE.Vector3();
@@ -506,18 +506,18 @@ export class Game {
 
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.12;
+    this.renderer.toneMappingExposure = 1.06;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
-    this.renderer.setClearColor(0xaedff0, 1);
+    this.renderer.setClearColor(0x9fd8d1, 1);
     this.renderer.domElement.className = 'game-canvas';
     this.renderer.domElement.setAttribute('aria-hidden', 'true');
     this.root.prepend(this.renderer.domElement);
 
-    this.scene.background = new THREE.Color(0xbbe7f3);
-    this.scene.fog = new THREE.Fog(0xcbe8d6, 30, 88);
+    this.scene.background = new THREE.Color(0xa8ddd5);
+    this.scene.fog = new THREE.Fog(0xa4cdb6, 27, 86);
 
-    const hemisphere = new THREE.HemisphereLight(0xccefff, 0x6fa352, 2.5);
+    const hemisphere = new THREE.HemisphereLight(0xbfe5dc, 0x315c3c, 1.78);
     hemisphere.name = 'SkyAndGrassFill';
     this.sun.name = 'WarmMorningSun';
     this.sun.position.set(-16, 28, 15);
@@ -596,7 +596,10 @@ export class Game {
     ]);
     this.resetCurrentScene();
     report(0.68, 'Waking butterflies and little fish');
-    await this.renderer.compileAsync(this.scene, this.camera);
+    // `compileAsync` can remain pending (or fail preparation entirely) on
+    // browsers whose parallel shader compiler does not report every custom
+    // material as ready. A real first render uses Three's compatible blocking
+    // path and keeps shader warm-up from becoming a loader failure.
     this.renderer.render(this.scene, this.camera);
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
     report(1, this.activeScene === 'scene-14'
@@ -676,6 +679,18 @@ export class Game {
 
   setMuted(muted: boolean): void {
     this.audio.setMuted(muted);
+  }
+
+  enableAudio(): void {
+    void this.audio.unlock();
+  }
+
+  getAudioDiagnostics(): AudioDiagnostics {
+    return this.audio.getDiagnostics();
+  }
+
+  playAudioDiagnosticTone(): void {
+    void this.audio.playDiagnosticTone();
   }
 
   onViewportChange(_viewport: StoryViewport): void {
@@ -1228,8 +1243,10 @@ export class Game {
     this.riverEscapeCourse.configure(revealZ);
     this.riverEscapeCourse.setVisible(false);
     this.safeRiverReach.configure(this.riverEscapeCourse.getFinishZ());
-    this.safeRiverReach.setVisible(false);
-    this.safeRiverReach.setSafeZoneGlowVisible(true);
+    // This is distant scenery during the reveal, but keeping it rendered from
+    // the start prevents the rocks and far bank from popping in mid-swim.
+    this.safeRiverReach.setVisible(true);
+    this.safeRiverReach.setSafeZoneGlowVisible(false);
     this.safeRiverReach.getSafeZone(this.sceneElevenSafeZone);
 
     this.tiger.group.visible = true;
@@ -1582,8 +1599,10 @@ export class Game {
     if (this.sceneThreeStage === stage) return;
     this.sceneThreeStage = stage;
     this.sceneThreeStageElapsed = 0;
-    this.tiger.group.visible = !this.isSceneThreeTortoiseView(stage);
-    if (this.isSceneThreeTortoiseView(stage)) this.tiger.group.rotation.y = this.getTigerLookYaw();
+    const tortoiseView = this.isSceneThreeTortoiseView(stage);
+    this.tiger.group.visible = !tortoiseView;
+    this.sceneThreeFoliage.setSightlineClear(tortoiseView);
+    if (tortoiseView) this.tiger.group.rotation.y = this.getTigerLookYaw();
     this.tiger.playAnimation(TIGER_ANIMATIONS.calmIdle, 0.18, SCENE_THREE_TIGER_ANIMATION_SPEED);
     if (stage === 'complete') this.queueStoryScene('scene-4', 0.65);
   }
@@ -1608,6 +1627,7 @@ export class Game {
 
   private showSceneThreeSniffDialogue(): void {
     this.setSceneThreeStage('sniff-dialogue');
+    this.audio.playSniffs();
     this.ui.showDialogue('Tiger', SCENE_THREE_SNIFF, () => {
       if (this.activeScene !== 'scene-3') return;
       this.setSceneThreeStage('pov');
@@ -1771,6 +1791,7 @@ export class Game {
   private showSceneFourTigerSnack(): void {
     if (this.sceneFourStage === 'tiger-snack') return;
     this.setSceneFourStage('tiger-snack');
+    this.audio.playSniffs();
     this.ui.showDialogue('Tiger', SCENE_FOUR_TIGER_SNACK, () => {
       if (this.activeScene === 'scene-4') this.setSceneFourStage('worried');
     });
@@ -1994,6 +2015,7 @@ export class Game {
       this.tortoise.setFullyHidden(true);
       this.tiger.group.position.copy(this.sceneFiveTigerStart);
       this.tiger.playAnimationOnce(TIGER_ANIMATIONS.sniff, 0.22, 1.18, true);
+      this.audio.playSniffs();
     } else if (stage === 'changing-side') {
       this.tortoise.setFullyHidden(true);
       this.tiger.playAnimation(TIGER_ANIMATIONS.walk, 0.24, 0.72);
@@ -3105,6 +3127,11 @@ export class Game {
       this.tortoise.setThinkingPose(0, true);
       this.tortoise.playAnimation(TORTOISE_ANIMATIONS.walk, 0.35, 0.9);
       this.riverEscapeCourse.setVisible(true);
+      // The next reach is distant scenery at this point. Reveal it with the
+      // rest of the river course so its rocks and bank are already part of the
+      // world when the safe-bank objective begins.
+      this.safeRiverReach.setVisible(true);
+      this.safeRiverReach.setSafeZoneGlowVisible(false);
       this.world.setGameplayRiverDecorVisible(false);
     } else if (stage === 'swimming') {
       this.shellUi.hideObjective();
@@ -3115,6 +3142,7 @@ export class Game {
       this.shellUi.hideSecondaryDialogue();
       this.shellUi.showObjective(SCENE_ELEVEN_SAFE_OBJECTIVE);
       this.safeRiverReach.setVisible(true);
+      this.safeRiverReach.setSafeZoneGlowVisible(true);
       this.tiger.playAnimation(TIGER_ANIMATIONS.calmIdle, 0.42, 0.62);
       this.tortoise.playAnimation(TORTOISE_ANIMATIONS.idle, 0.32, 0.82);
     } else if (stage === 'safe-swimming') {
@@ -3504,6 +3532,7 @@ export class Game {
       this.tortoise.playAnimationOnce(TORTOISE_ANIMATIONS.headShake, 0.32, 0.78, false);
     } else if (stage === 'tiger-accuses') {
       this.tortoise.playAnimation(TORTOISE_ANIMATIONS.idle, 0.42, 0.74);
+      this.audio.playAngryGrowl();
       this.ui.showDialogue('Tiger', SCENE_THIRTEEN_TIGER_ACCUSES, () => {
         if (this.activeScene === 'scene-13') this.setSceneThirteenStage('tortoise-strength');
       });
@@ -3609,7 +3638,7 @@ export class Game {
       this.ui.reset();
       if (!this.storyComplete) {
         this.storyComplete = true;
-        if (this.storyMode) this.onComplete?.();
+        this.onComplete?.();
       }
     }
   }
@@ -4042,6 +4071,7 @@ export class Game {
     this.tortoise.playAnimation(TORTOISE_ANIMATIONS.walk, 0, 0.94);
     this.riverEscapeCourse.setVisible(true);
     this.safeRiverReach.setVisible(true);
+    this.safeRiverReach.setSafeZoneGlowVisible(true);
     this.world.setGameplayRiverDecorVisible(false);
     this.setSceneElevenStage('safe-swimming');
     this.sceneElevenSafeSpeechIndex = SCENE_ELEVEN_TIGER_SAFE_PROGRESS

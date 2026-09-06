@@ -78,7 +78,7 @@ export default function Home() {
             {stories.map((story) => (
               <article className="featured-story" key={story.slug}>
                 <Link className="story-art-link" href={`/stories/${story.slug}`} aria-label={`Open ${story.title}`}>
-                  <StoryArtwork variant={story.slug === 'crow-and-pitcher' ? 'crow-and-pitcher' : story.slug === 'tortoise-and-rabbit' ? 'tortoise-and-rabbit' : 'mouse-and-lion'} />
+                  <StoryArtwork variant={story.slug === 'crow-and-pitcher' ? 'crow-and-pitcher' : story.slug === 'tortoise-and-rabbit' ? 'tortoise-and-rabbit' : story.slug === 'tortoise-and-tiger' ? 'tortoise-and-tiger' : 'mouse-and-lion'} />
                   <StoryProgressBadge slug={story.slug} playable={story.playable} />
                 </Link>
                 <div className="story-copy">

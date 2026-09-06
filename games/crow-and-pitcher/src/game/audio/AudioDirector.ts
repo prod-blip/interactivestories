@@ -1,5 +1,12 @@
+import {
+  createStoryAudioContext,
+  loadStoryAudioBuffer,
+  StoryAudioSession,
+} from '@moonlit/story-runtime';
+
 export class AudioDirector {
   private context: AudioContext | null = null;
+  private readonly audioSession = new StoryAudioSession();
   private master: GainNode | null = null;
   private ambienceLoad: Promise<void> | null = null;
   private chirpBuffers: AudioBuffer[] = [];
@@ -20,13 +27,12 @@ export class AudioDirector {
   private muted = false;
 
   async start(): Promise<void> {
-    if (!this.context) {
-      this.context = new AudioContext();
-      this.master = this.context.createGain();
-      this.master.gain.value = this.muted ? 0 : 0.34;
-      this.master.connect(this.context.destination);
-    }
-    if (this.context.state !== 'running') await this.context.resume();
+    const context = await this.audioSession.unlock({
+      getContext: () => this.context,
+      createContext: () => this.createGraph(),
+      abandonContext: () => this.abandonInterruptedContext(),
+    });
+    if (!context) return;
     this.ambienceLoad ??= this.loadAmbience();
     await this.ambienceLoad;
     this.scheduleNextChirp();
@@ -76,8 +82,7 @@ export class AudioDirector {
   }
 
   async resume(): Promise<void> {
-    if (this.context && this.context.state !== 'running') await this.context.resume();
-    this.scheduleNextChirp();
+    await this.start();
   }
 
   dispose(): void {
@@ -125,9 +130,35 @@ export class AudioDirector {
 
   private async loadBuffer(url: string): Promise<AudioBuffer> {
     if (!this.context) throw new Error('Audio context is not ready.');
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Unable to load ${url}: ${response.status}`);
-    return this.context.decodeAudioData(await response.arrayBuffer());
+    return loadStoryAudioBuffer(this.context, url);
+  }
+
+  private createGraph(): AudioContext {
+    this.context = createStoryAudioContext();
+    this.master = this.context.createGain();
+    this.master.gain.value = this.muted ? 0 : 0.34;
+    this.master.connect(this.context.destination);
+    return this.context;
+  }
+
+  private abandonInterruptedContext(): void {
+    this.clearChirpTimer();
+    this.clearWingStopTimer();
+    this.clearDrinkingStopTimer();
+    for (const source of [this.drinkingSource, this.wingSource]) {
+      try { source?.stop(); } catch { /* The source may already have ended. */ }
+    }
+    this.context = null;
+    this.master = null;
+    this.ambienceLoad = null;
+    this.chirpBuffers = [];
+    this.splashBuffer = null;
+    this.drinkingBuffer = null;
+    this.drinkingSource = null;
+    this.drinkingGain = null;
+    this.wingBuffer = null;
+    this.wingSource = null;
+    this.wingGain = null;
   }
 
   private scheduleNextChirp(): void {

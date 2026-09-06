@@ -51,9 +51,8 @@ const appRoot = app;
 let game: Game | undefined;
 let runtime: StoryRuntime | undefined;
 
-// Safari on iPad only enables Web Audio from a direct user gesture and may
-// suspend it again after fullscreen or an interruption. Retrying is safe: the
-// AudioDirector resumes the existing context without recreating its soundscape.
+// Retry from every trusted interaction. The shared audio session safely
+// rebuilds iPhone/iPad contexts after app handoff or interruption.
 const unlockGameAudio = () => game?.enableAudio();
 window.addEventListener('pointerdown', unlockGameAudio, { passive: true });
 window.addEventListener('touchend', unlockGameAudio, { passive: true });

@@ -1,4 +1,29 @@
-export function StoryArtwork({ compact = false, variant = 'mouse-and-lion' }: { compact?: boolean; variant?: 'mouse-and-lion' | 'crow-and-pitcher' | 'tortoise-and-rabbit' }) {
+export function StoryArtwork({ compact = false, variant = 'mouse-and-lion' }: { compact?: boolean; variant?: 'mouse-and-lion' | 'crow-and-pitcher' | 'tortoise-and-rabbit' | 'tortoise-and-tiger' }) {
+  if (variant === 'tortoise-and-tiger') {
+    return (
+      <div className={`story-artwork story-artwork--tiger${compact ? ' story-artwork--compact' : ''}`} aria-hidden="true">
+        <div className="art-sun" />
+        <div className="art-hill art-hill--back" />
+        <div className="art-hill art-hill--front" />
+        <div className="art-river"><span /></div>
+        <div className="art-tree art-tree--left"><span /><span /><span /></div>
+        <div className="art-tree art-tree--right"><span /><span /></div>
+        <div className="art-reeds art-reeds--left"><span /><span /><span /></div>
+        <div className="art-reeds art-reeds--right"><span /><span /><span /></div>
+        <div className="art-jungle-tiger">
+          <span className="jungle-tiger-tail" />
+          <span className="jungle-tiger-body" />
+          <span className="jungle-tiger-head" />
+          <span className="jungle-tiger-ear jungle-tiger-ear--one" />
+          <span className="jungle-tiger-ear jungle-tiger-ear--two" />
+          <span className="jungle-tiger-stripes" />
+        </div>
+        <div className="art-tortoise"><span className="tortoise-head" /><span className="tortoise-shell" /><span className="tortoise-feet" /></div>
+        <div className="art-glow" />
+      </div>
+    );
+  }
+
   if (variant === 'tortoise-and-rabbit') {
     return (
       <div className={`story-artwork story-artwork--race${compact ? ' story-artwork--compact' : ''}`} aria-hidden="true">

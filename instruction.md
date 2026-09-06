@@ -141,6 +141,70 @@ For copied files referenced by a game HTML entry point, use a relative shared pa
 
 Only genuinely reusable assets should be shared. Story-specific characters, environments, narration, dialogue recordings, models, and special sound effects stay inside `games/<story-slug>/public/` so each story remains self-contained.
 
+## Standard audio implementation
+
+Every story must use the mobile-safe audio utilities exported by `@moonlit/story-runtime`. Do not implement a separate `AudioContext.resume()` lifecycle or raw audio `fetch()` helper inside an individual game. This keeps file loading, iPhone/iPad gesture activation, and Safari interruption recovery consistent across all stories.
+
+Import the standard utilities in the story's `AudioDirector`:
+
+```ts
+import {
+  createStoryAudioContext,
+  loadStoryAudioBuffer,
+  StoryAudioSession,
+} from '@moonlit/story-runtime';
+```
+
+The director owns one session and asks it to unlock from a trusted gesture:
+
+```ts
+private readonly audioSession = new StoryAudioSession();
+private context: AudioContext | null = null;
+
+async start(): Promise<void> {
+  const context = await this.audioSession.unlock({
+    getContext: () => this.context,
+    createContext: () => {
+      this.context = createStoryAudioContext();
+      this.createMixGraph(this.context);
+      return this.context;
+    },
+    abandonContext: () => this.abandonInterruptedContext(),
+  });
+  if (!context) return;
+
+  // Start or restore this story's ambience and cues here.
+}
+```
+
+`abandonInterruptedContext()` must stop active sources, clear nodes and decoded `AudioBuffer` references, reset in-flight decode promises, and set the director's context to `null`. Preserve story state such as whether a character is walking, flying, sleeping, or drinking so the appropriate loop can restart after reconstruction. The shared loader retains encoded file data, so rebuilding the context decodes again without downloading the same sound again.
+
+Load a complete sound through the standard cached fetch/decode path:
+
+```ts
+const sound = await loadStoryAudioBuffer(
+  context,
+  `${import.meta.env.BASE_URL}audio/story-cue.wav`,
+);
+```
+
+When encoded data needs to be prefetched before an audio context exists, use `fetchStoryAudioData()`, then use `decodeStoryAudioData()` after the session is running. Never create an `AudioContext` merely to preload a file.
+
+Every game must retry its public `enableAudio()` method from the same global trusted gestures:
+
+```ts
+const unlockGameAudio = () => game?.enableAudio();
+window.addEventListener('pointerdown', unlockGameAudio, { passive: true });
+window.addEventListener('touchend', unlockGameAudio, { passive: true });
+window.addEventListener('keydown', unlockGameAudio);
+```
+
+Remove those listeners during disposal. Keep `allow="autoplay; fullscreen"` on the website's game iframe.
+
+Do not await `AudioContext.resume()` directly in story code. On iOS Safari, especially after opening a link from another app, entering fullscreen, switching tabs, or interrupting the device audio session, WebKit can leave a context in its non-standard `interrupted` state and keep the resume promise pending forever. `StoryAudioSession` primes the hardware output, applies a bounded resume attempt, releases stalled attempts, and rebuilds an interrupted context from the next trusted tap.
+
+Before publishing, test sound on desktop Chrome, mobile Chrome, iPhone Safari, and iPad Safari. On iOS, also open the deployed game from another app such as Messages or Notes, interact with it, switch away and back, and confirm sound recovers on a subsequent tap.
+
 ## Required foundation
 
 Every game must include:

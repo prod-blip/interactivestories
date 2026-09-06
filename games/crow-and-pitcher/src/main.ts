@@ -15,6 +15,13 @@ if (!app) throw new Error('Missing game root.');
 let game: Game | undefined;
 let runtime: StoryRuntime | undefined;
 
+// Retry from every trusted interaction. The shared audio session safely
+// rebuilds iPhone/iPad contexts after app handoff or interruption.
+const unlockGameAudio = () => game?.enableAudio();
+window.addEventListener('pointerdown', unlockGameAudio, { passive: true });
+window.addEventListener('touchend', unlockGameAudio, { passive: true });
+window.addEventListener('keydown', unlockGameAudio);
+
 function setProgress(progress: number, stage: string): void {
   const percentage = Math.round(Math.min(1, Math.max(0, progress)) * 100);
   if (loaderStage) loaderStage.textContent = stage;
@@ -68,6 +75,9 @@ void bootstrap().catch((error: unknown) => {
 });
 
 window.addEventListener('beforeunload', () => {
+  window.removeEventListener('pointerdown', unlockGameAudio);
+  window.removeEventListener('touchend', unlockGameAudio);
+  window.removeEventListener('keydown', unlockGameAudio);
   runtime?.dispose();
   game?.dispose();
 });
