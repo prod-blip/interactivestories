@@ -1,6 +1,8 @@
 import {
+  clampStoryVolume,
   createStoryAudioContext,
   loadStoryAudioBuffer,
+  STORY_MASTER_GAIN,
   StoryAudioSession,
 } from '@moonlit/story-runtime';
 
@@ -22,6 +24,7 @@ export class AudioDirector {
   private started = false;
   private disposed = false;
   private muted = false;
+  private volume = 1;
   private lionSleeping = true;
   private lionWalking = false;
   private lionWalkRemaining = 0;
@@ -62,9 +65,12 @@ export class AudioDirector {
 
   setMuted(muted: boolean): void {
     this.muted = muted;
-    if (!this.master || !this.context) return;
-    this.master.gain.cancelScheduledValues(this.context.currentTime);
-    this.master.gain.setTargetAtTime(muted ? 0 : 0.72, this.context.currentTime, 0.04);
+    this.applyMasterGain();
+  }
+
+  setVolume(volume: number): void {
+    this.volume = clampStoryVolume(volume);
+    this.applyMasterGain();
   }
 
   update(delta: number, traveled: number, chewing: boolean): void {
@@ -244,7 +250,7 @@ export class AudioDirector {
     this.ambienceBus = this.context.createGain();
     this.musicBus = this.context.createGain();
     this.effectsBus = this.context.createGain();
-    this.master.gain.value = this.muted ? 0 : 0.72;
+    this.master.gain.value = this.muted ? 0 : STORY_MASTER_GAIN * this.volume;
     this.ambienceBus.gain.value = 0.62;
     this.musicBus.gain.value = 0.56;
     this.effectsBus.gain.value = 0.82;
@@ -262,6 +268,16 @@ export class AudioDirector {
       previous = previous * 0.985 + white * 0.015;
       samples[index] = white * 0.34 + previous * 1.8;
     }
+  }
+
+  private applyMasterGain(): void {
+    if (!this.master || !this.context) return;
+    this.master.gain.cancelScheduledValues(this.context.currentTime);
+    this.master.gain.setTargetAtTime(
+      this.muted ? 0 : STORY_MASTER_GAIN * this.volume,
+      this.context.currentTime,
+      0.04,
+    );
   }
 
   private abandonInterruptedContext(): void {

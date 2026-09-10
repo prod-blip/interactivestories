@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@moonlit/story-assets": "*",
+    "@moonlit/story-rendering": "*",
     "@moonlit/story-runtime": "*",
     "@types/three": "^0.185.1",
     "three": "^0.185.1"

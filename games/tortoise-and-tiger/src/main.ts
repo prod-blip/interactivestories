@@ -1,5 +1,6 @@
 import { createStoryRuntime, type StoryRuntime } from '@moonlit/story-runtime';
 import './style.css';
+import '../../../packages/story-assets/assets/ui/story-ending.css';
 import { Game, type StorySceneId } from './game/Game';
 
 const app = document.querySelector<HTMLElement>('#app');
@@ -153,6 +154,7 @@ async function bootstrap(): Promise<void> {
     resume: () => game?.resume(),
     restart: restartStory,
     setMuted: (muted) => game?.setMuted(muted),
+    setVolume: (volume) => game?.setVolume(volume),
     onViewportChange: (viewport) => game?.onViewportChange(viewport),
   });
 

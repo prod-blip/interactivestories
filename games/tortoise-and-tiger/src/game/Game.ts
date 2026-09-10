@@ -1,4 +1,5 @@
 import type { StoryViewport } from '@moonlit/story-runtime';
+import { exposeRenderDiagnostics } from '@moonlit/story-rendering';
 import * as THREE from 'three';
 import { AudioDirector, type AudioDiagnostics } from './audio/AudioDirector';
 import { Input } from './input';
@@ -14,7 +15,7 @@ import { StoryButterfly } from './objects/StoryButterfly';
 import { StoryTiger, TIGER_ANIMATIONS } from './objects/StoryTiger';
 import { StoryTortoise, TORTOISE_ANIMATIONS } from './objects/StoryTortoise';
 import { TortoiseSwimWake } from './objects/TortoiseSwimWake';
-import { applyResponsiveViewport } from './responsive';
+import { applyResponsiveViewport, renderQuality } from './responsive';
 import { RiverCompassUI } from './ui/RiverCompassUI';
 import { ShellHideUI } from './ui/ShellHideUI';
 import { StoryPopupUI } from './ui/StoryPopupUI';
@@ -248,7 +249,7 @@ const SCENE_SEVEN_PICKUP_DURATION = 3.6;
 const SCENE_SEVEN_REVEAL_DURATION = 1.35;
 const SCENE_SEVEN_TIGER_PROUD = 'Ha!\n\nWhat a wonderful idea!';
 const SCENE_SEVEN_TORTOISE_FLATTER = 'Oh yes.\n\nVery clever of you.';
-const SCENE_SEVEN_NARRATION = 'The tiger was so hungry that he did not stop to think.';
+const SCENE_SEVEN_NARRATION = 'The tiger decided to lift the tortoise and throw him into the water.';
 const SCENE_EIGHT_DURATION = 10.4;
 const SCENE_EIGHT_TIGER_SOFT_AT = 0.9;
 const SCENE_EIGHT_TIGER_PROUD_AT = 3.45;
@@ -513,6 +514,7 @@ export class Game {
     this.renderer.domElement.className = 'game-canvas';
     this.renderer.domElement.setAttribute('aria-hidden', 'true');
     this.root.prepend(this.renderer.domElement);
+    exposeRenderDiagnostics('tortoise-and-tiger', this.renderer, renderQuality);
 
     this.scene.background = new THREE.Color(0xa8ddd5);
     this.scene.fog = new THREE.Fog(0xa4cdb6, 27, 86);
@@ -522,7 +524,7 @@ export class Game {
     this.sun.name = 'WarmMorningSun';
     this.sun.position.set(-16, 28, 15);
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(2048, 2048);
+    this.sun.shadow.mapSize.setScalar(renderQuality.shadowMapSize);
     this.sun.shadow.camera.left = -28;
     this.sun.shadow.camera.right = 28;
     this.sun.shadow.camera.top = 28;
@@ -679,6 +681,10 @@ export class Game {
 
   setMuted(muted: boolean): void {
     this.audio.setMuted(muted);
+  }
+
+  setVolume(volume: number): void {
+    this.audio.setVolume(volume);
   }
 
   enableAudio(): void {
@@ -2952,32 +2958,29 @@ export class Game {
   }
 
   private updateSceneTenCamera(delta: number, immediate: boolean): void {
-    const wideShot = this.sceneTenStage === 'flight'
-      || this.sceneTenStage === 'splash'
-      || this.sceneTenStage === 'waiting'
-      || this.sceneTenStage === 'complete';
+    // Keep the river conversation's side-on composition through the throw.
+    // A cut to a wider angle exposed the deliberately simple carry animation.
     this.desiredCameraTarget.copy(this.tiger.group.position).lerp(
-      this.sceneTenSplashPoint,
-      wideShot ? 0.48 : 0.34,
+      this.sceneTenThrowStart,
+      0.28,
     );
-    this.desiredCameraTarget.y = wideShot ? 1.28 : 1.05;
+    this.desiredCameraTarget.y = 1.14;
     this.desiredCameraPosition
-      .copy(this.desiredCameraTarget)
-      .addScaledVector(this.sceneTenCameraSide, wideShot ? 11.35 : 8.15)
-      .addScaledVector(this.sceneTenThrowDirection, -0.45);
-    this.desiredCameraPosition.y = wideShot ? 4.85 : 4.05;
+      .copy(this.tiger.group.position)
+      .addScaledVector(this.sceneEightCameraSide, 6.55)
+      .addScaledVector(this.sceneEightDirection, -0.35);
+    this.desiredCameraPosition.y = 3.48;
 
     if (this.camera.aspect < 0.78) {
-      this.desiredCameraPosition.addScaledVector(this.sceneTenCameraSide, wideShot ? 7.1 : 3.8);
-      this.desiredCameraPosition.y += wideShot ? 1.25 : 0.95;
-      this.desiredCameraTarget.y += 0.18;
+      this.desiredCameraPosition.addScaledVector(this.sceneEightCameraSide, 2.15);
+      this.desiredCameraPosition.y += 0.55;
     }
 
     if (immediate) {
       this.camera.position.copy(this.desiredCameraPosition);
       this.cameraTarget.copy(this.desiredCameraTarget);
     } else {
-      const amount = 1 - Math.exp(-delta * (wideShot ? 1.45 : 1.75));
+      const amount = 1 - Math.exp(-delta * 1.7);
       this.camera.position.lerp(this.desiredCameraPosition, amount);
       this.cameraTarget.lerp(this.desiredCameraTarget, amount);
     }
@@ -3255,6 +3258,7 @@ export class Game {
       this.sceneElevenSafeSpeechIndex += 1;
       if (speechIndex === 0) {
         this.sceneElevenTigerLookBackTimer = SCENE_ELEVEN_TIGER_LOOK_BACK_DURATION;
+        this.audio.playAngryGrowl();
       }
     } else {
       this.updateSceneElevenSpeechTimer(delta);
@@ -4904,6 +4908,8 @@ export class Game {
     const now = performance.now();
     const delta = Math.min((now - this.lastFrameTime) / 1000, 0.05);
     this.lastFrameTime = now;
+    renderQuality.sampleFrame(delta);
+    this.resize();
     this.update(delta);
     this.renderer.render(this.scene, this.camera);
     this.animationFrame = requestAnimationFrame(this.render);

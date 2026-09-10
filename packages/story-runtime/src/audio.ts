@@ -1,5 +1,12 @@
 const DEFAULT_RESUME_TIMEOUT_MS = 1_000;
 
+/** A shared headroom-safe starting level for every Moonlit story. */
+export const STORY_MASTER_GAIN = 0.45;
+
+export function clampStoryVolume(volume: number): number {
+  return Math.min(1, Math.max(0, Number.isFinite(volume) ? volume : 1));
+}
+
 const encodedAudioCache = new Map<string, Promise<ArrayBuffer>>();
 
 export type StoryAudioContextHandlers = {

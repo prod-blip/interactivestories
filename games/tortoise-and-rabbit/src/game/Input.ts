@@ -31,12 +31,14 @@ export class Input {
   read(): Movement {
     const keyboardForward = Number(
       this.keys.has('ArrowUp') || this.keys.has('KeyW') || this.keys.has('Space'),
-    );
+    ) - Number(this.keys.has('ArrowDown') || this.keys.has('KeyS'));
     const keyboardSideways = Number(this.keys.has('ArrowRight') || this.keys.has('KeyD'))
       - Number(this.keys.has('ArrowLeft') || this.keys.has('KeyA'));
-    const touchForward = this.touchY < -0.12 ? Math.min(1, -this.touchY) : 0;
+    const touchForward = Math.abs(this.touchY) > 0.12
+      ? Math.max(-1, Math.min(1, -this.touchY))
+      : 0;
     return {
-      forward: Math.max(keyboardForward, touchForward),
+      forward: Math.max(-1, Math.min(1, keyboardForward + touchForward)),
       sideways: Math.max(-1, Math.min(1, keyboardSideways + this.touchX)),
     };
   }

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { batchStaticMeshes } from '@moonlit/story-rendering';
 import { AncientTree } from './assets/AncientTree';
 import { createFence } from './assets/FieldAssets';
 import { StoneWall } from './assets/StoneWall';
@@ -26,8 +27,8 @@ export class GardenScene {
   private readonly sceneryTiles = new Map<string, THREE.Group>();
   private readonly distantTiles = new Map<string, THREE.Group>();
   private readonly sceneryTileSize = 22;
-  private readonly sceneryRadius = 2;
-  private readonly distantRadius = 3;
+  private readonly sceneryRadius = 1;
+  private readonly distantRadius = 2;
   private lastSceneryCellX = Number.NaN;
   private lastSceneryCellZ = Number.NaN;
   private elapsed = 0;
@@ -242,6 +243,9 @@ export class GardenScene {
         if (random() > 0.48) add(this.scenery.createButterfly(random), 0.85);
         break;
     }
+    batchStaticMeshes(tile, {
+      shouldBatch: (mesh) => !this.hasAnimatedAncestor(mesh, tile),
+    });
     return tile;
   }
 
@@ -302,7 +306,17 @@ export class GardenScene {
 
     if (random() > 0.67) this.addDistantFence(tile, random);
     if (random() > 0.8) this.addDistantStructure(tile, random);
+    batchStaticMeshes(tile);
     return tile;
+  }
+
+  private hasAnimatedAncestor(object: THREE.Object3D, root: THREE.Object3D): boolean {
+    let current: THREE.Object3D | null = object;
+    while (current && current !== root) {
+      if (current.userData.ambientMotion) return true;
+      current = current.parent;
+    }
+    return false;
   }
 
   private addDistantFence(tile: THREE.Group, random: () => number): void {

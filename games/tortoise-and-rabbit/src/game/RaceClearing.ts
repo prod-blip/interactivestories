@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { batchStaticMeshes } from '@moonlit/story-rendering';
 import { ForestAssets } from './ForestAssets';
 
 const CLEARING_Z = -44;
@@ -70,6 +71,7 @@ export class RaceClearing {
     this.addNapGrove();
     this.addSpectators();
     this.addFinishSpectators();
+    this.configureRenderingBatches();
     this.setFinishVisible(false);
   }
 
@@ -611,6 +613,7 @@ export class RaceClearing {
       const tree = index % 4 === 1
         ? this.assets.pineTree(random, scale)
         : this.assets.tree(random, scale);
+      tree.name = `FramingTree${index + 1}`;
       tree.position.set(x, 0, z);
       tree.rotation.y = random() * Math.PI * 2;
       this.group.add(tree);
@@ -629,6 +632,39 @@ export class RaceClearing {
       decoration.position.set(x, 0.08, z + (random() - 0.5) * 3);
       this.group.add(decoration);
     }
+  }
+
+  private configureRenderingBatches(): void {
+    this.group.traverse((object) => {
+      if (object instanceof THREE.Mesh) object.castShadow = false;
+    });
+    this.group.traverse((object) => {
+      if (!object.name.includes('Tree')) return;
+      object.traverse((child) => {
+        if (child instanceof THREE.Mesh) child.castShadow = true;
+      });
+    });
+    batchStaticMeshes(this.group, {
+      shouldBatch: (mesh) => !this.hasAnimatedOrToggleableAncestor(mesh),
+    });
+  }
+
+  private hasAnimatedOrToggleableAncestor(object: THREE.Object3D): boolean {
+    const dynamicRoots: THREE.Object3D[] = [
+      this.finishLine,
+      this.napBed,
+      ...this.spectators,
+      ...this.finishSpectators,
+      ...this.napGroveTrees,
+      ...this.understoryPlants,
+      ...this.fireflies,
+    ];
+    let current: THREE.Object3D | null = object;
+    while (current && current !== this.group) {
+      if (dynamicRoots.includes(current)) return true;
+      current = current.parent;
+    }
+    return false;
   }
 
   private addUnderstory(): void {

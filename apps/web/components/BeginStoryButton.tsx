@@ -3,7 +3,7 @@
 import { ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export function BeginStoryButton({ href }: { href: string }) {
+export function BeginStoryButton({ href, label = 'Begin the story', className = '' }: { href: string; label?: string; className?: string }) {
   const router = useRouter();
 
   async function beginStory() {
@@ -20,8 +20,8 @@ export function BeginStoryButton({ href }: { href: string }) {
   }
 
   return (
-    <button className="primary-button begin-story-button" type="button" onClick={beginStory}>
-      Begin the story <ArrowRight size={17} />
+    <button className={`primary-button begin-story-button ${className}`.trim()} type="button" onClick={beginStory}>
+      {label} <ArrowRight size={17} />
     </button>
   );
 }

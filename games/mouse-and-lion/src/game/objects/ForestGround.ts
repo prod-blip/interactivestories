@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { refreshInstancedMeshBounds } from '@moonlit/story-rendering';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const CHUNK_LENGTH = 14;
@@ -169,7 +170,7 @@ export class ForestGround {
     mesh.name = name;
     mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     mesh.receiveShadow = true;
-    mesh.frustumCulled = false;
+    mesh.frustumCulled = true;
     return mesh;
   }
 
@@ -241,6 +242,7 @@ export class ForestGround {
       mesh.setMatrixAt(index, this.matrix);
     }
     mesh.instanceMatrix.needsUpdate = true;
+    refreshInstancedMeshBounds(mesh);
   }
 
   private populateTrees(mesh: THREE.InstancedMesh, pathVisible: boolean, chunk: THREE.Group): void {
@@ -256,10 +258,10 @@ export class ForestGround {
       });
     }
     mesh.userData.treeData = treeData;
-    this.updateTreeMatrices(mesh, treeData);
+    this.updateTreeMatrices(mesh, treeData, true);
   }
 
-  private updateTreeMatrices(mesh: THREE.InstancedMesh, treeData: TreeInstanceData[]): void {
+  private updateTreeMatrices(mesh: THREE.InstancedMesh, treeData: TreeInstanceData[], refreshBounds = false): void {
     for (let index = 0; index < treeData.length; index += 1) {
       const tree = treeData[index];
       const swayX = Math.cos(this.elapsed * 0.83 + tree.phase * 0.7) * 0.008 * tree.strength;
@@ -271,6 +273,7 @@ export class ForestGround {
       mesh.setMatrixAt(index, this.matrix);
     }
     mesh.instanceMatrix.needsUpdate = true;
+    if (refreshBounds) refreshInstancedMeshBounds(mesh);
   }
 
   private animateCanopies(): void {
@@ -278,7 +281,7 @@ export class ForestGround {
       for (const child of chunk.children) {
         if (!(child instanceof THREE.InstancedMesh) || child.name !== 'trees') continue;
         const treeData = child.userData.treeData as TreeInstanceData[] | undefined;
-        if (treeData) this.updateTreeMatrices(child, treeData);
+      if (treeData) this.updateTreeMatrices(child, treeData);
       }
     }
   }

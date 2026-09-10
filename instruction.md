@@ -201,9 +201,32 @@ window.addEventListener('keydown', unlockGameAudio);
 
 Remove those listeners during disposal. Keep `allow="autoplay; fullscreen"` on the website's game iframe.
 
+All stories must route their final output through `STORY_MASTER_GAIN` and implement the runtime's `setVolume(volume)` adapter. Do not choose a story-specific master gain to compensate for an individual cue; balance that cue or its ambience/effects bus instead. The shelf owns the persistent 0–100% player preference and sends it through `moonlit:set-volume` whenever a game connects or reloads. Preserve the separate mute command so muting never destroys the chosen volume.
+
 Do not await `AudioContext.resume()` directly in story code. On iOS Safari, especially after opening a link from another app, entering fullscreen, switching tabs, or interrupting the device audio session, WebKit can leave a context in its non-standard `interrupted` state and keep the resume promise pending forever. `StoryAudioSession` primes the hardware output, applies a bounded resume attempt, releases stalled attempts, and rebuilds an interrupted context from the next trusted tap.
 
 Before publishing, test sound on desktop Chrome, mobile Chrome, iPhone Safari, and iPad Safari. On iOS, also open the deployed game from another app such as Messages or Notes, interact with it, switch away and back, and confirm sound recovers on a subsequent tap.
+
+## Standard Three.js rendering architecture
+
+Every Three.js story must use `@moonlit/story-rendering` for renderer sizing, adaptive pixel ratio, shadow quality, instance bounds, and development diagnostics. Do not create story-specific device thresholds or silently raise rendering quality above the shared profile.
+
+Repeated environmental details must be spatially batched:
+
+- Use `THREE.InstancedMesh` for repeated objects that share geometry and material. Merge the parts of a logical prop first when that turns a multi-mesh tree, plant, rock, or decoration into one reusable instance.
+- Partition large batches by tile or another bounded spatial zone. Do not create one world-sized batch whose bounds remain in the camera frustum everywhere.
+- After assigning or changing instance matrices, calculate the batch bounding box and bounding sphere with `refreshInstancedMeshBounds()`. Keep frustum culling enabled.
+- A dynamic batch may disable culling only when recalculating safe bounds every frame is measurably more expensive. Document the reason beside the exception and keep the batch small.
+- Use a 3×3 active tile or chunk grid by default. A larger active world requires a measured performance justification and a visual test showing that fog, horizon scenery, or recycling cannot cover the boundary.
+- Prefer a finite, bounded world whenever the story does not require continuous travel. Do not add tile recycling merely to imply an endless background. For a finite world, batch repeated scenery globally or in a small number of measured spatial regions, compute bounds once, and conceal the boundary with fog, terrain, and horizon scenery.
+
+Large ambient animation sets must use shader animation driven by one shared time uniform, or update only nearby visible batches. Do not walk hundreds of individual plants or allocate temporary vectors on every animation frame. Reduced-motion mode must freeze nonessential environmental motion.
+
+Limit real-time shadows to characters and visually important large objects. Small foliage, flowers, grass, stones, particles, audience details, and distant scenery should not cast shadows. Use the shared 512 px constrained-device and 1024 px standard shadow profiles; higher-resolution maps require a documented visual and device benchmark.
+
+Hide inactive scene groups and skip all of their update work. Story transitions must not leave a previous environment rendering or animating behind the active scene.
+
+Target 60 FPS and verify a sustained average of at least 50 FPS on the reference OnePlus 6 after the device has cooled. Record frame pacing, draw calls, triangles, memory, pixel ratio, and shadow settings for representative gameplay. Investigate recurring frames above 33 ms and any uncontrolled growth in renderer memory or scene objects before publishing.
 
 ## Required foundation
 
@@ -219,7 +242,10 @@ Every game must include:
 - Calm visuals and sound: no flashing prompts, loud surprises, frantic reward loops, or unnecessary clutter.
 - Accessible text, readable contrast, large touch targets, and reduced-motion support.
 - Cleanup for animation frames, event listeners, audio, geometries, materials, and textures.
+- Shared rendering quality, spatial instancing, correct instance bounds, selective shadows, and inactive-scene suspension as defined above.
 - A restart path and a clear story ending.
+
+Every completed story must use the shared Moonlit ending template: one moral headline, one short supporting line, and exactly two actions—`Play Again` and `Main Menu`. Do not add an eyebrow/status line, “The End”, free-explore action, score, or intermediary completion screen. Use the shared `story-ending.css` asset and the `moonlit-ending` class so every game remains visually and behaviorally consistent.
 
 ## Build configuration
 
@@ -250,4 +276,4 @@ npm run typecheck
 npm run build
 ```
 
-Test the complete story inside the website iframe on desktop, iPad Safari, and a mobile-sized screen. Confirm touch movement, audio, rotation, fullscreen, restart, and leaving the story all work.
+Test the complete story inside the website iframe on desktop, iPad Safari, and a mobile-sized screen. Confirm touch movement, audio, rotation, fullscreen, restart, leaving the story, instance culling, adaptive resolution, and sustained performance all work.

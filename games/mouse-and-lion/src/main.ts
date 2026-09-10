@@ -1,4 +1,5 @@
 import './style.css';
+import '../../../packages/story-assets/assets/ui/story-ending.css';
 import { createStoryRuntime, type StoryRuntime } from '@moonlit/story-runtime';
 import { Game } from './game/Game';
 
@@ -15,7 +16,8 @@ const lionDialogueText = lionDialogue?.querySelector<HTMLElement>('.encounter-di
 const narratorCard = document.querySelector<HTMLElement>('#narrator-card');
 const narratorText = narratorCard?.querySelector<HTMLElement>('.narrator-card__text');
 const storyEnding = document.querySelector<HTMLElement>('#story-ending');
-const restartStoryButton = storyEnding?.querySelector<HTMLButtonElement>('.story-ending__restart');
+const restartStoryButton = storyEnding?.querySelector<HTMLButtonElement>('[data-action="restart"]');
+const mainMenuButton = storyEnding?.querySelector<HTMLButtonElement>('[data-action="menu"]');
 const explorationThought = document.querySelector<HTMLElement>('#exploration-thought');
 const explorationThoughtText = explorationThought?.querySelector<HTMLElement>('.exploration-thought__text');
 const timePassage = document.querySelector<HTMLElement>('#time-passage');
@@ -59,6 +61,10 @@ window.addEventListener('touchend', unlockGameAudio, { passive: true });
 window.addEventListener('keydown', unlockGameAudio);
 
 restartStoryButton?.addEventListener('click', () => window.location.reload());
+mainMenuButton?.addEventListener('click', () => {
+  if (window.parent !== window) runtime?.requestExit();
+  else window.location.assign('/');
+});
 
 function setLoadingProgress(progress: number, stage: string): void {
   const clamped = Math.round(Math.min(1, Math.max(0, progress)) * 100);
@@ -271,6 +277,7 @@ async function bootstrap(): Promise<void> {
       else window.location.reload();
     },
     setMuted: (muted) => game?.setMuted(muted),
+    setVolume: (volume) => game?.setVolume(volume),
   });
   game = new Game(appRoot);
   game.setLionEncounterHandler(() => {

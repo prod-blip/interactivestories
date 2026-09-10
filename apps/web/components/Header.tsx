@@ -1,16 +1,15 @@
-import Link from 'next/link';
 import { Brand } from './Brand';
+import { ShelfSoundControl } from './ShelfSoundControl';
 
 export function Header() {
   return (
     <header className="site-header">
       <div className="shell header-inner">
         <Brand />
-        <nav aria-label="Primary navigation">
-          <Link href="/#stories">Stories</Link>
-          <Link href="/#our-approach">Our approach</Link>
-          <Link href="/#for-grown-ups">For grown-ups</Link>
-        </nav>
+        <div className="header-tools">
+          <p className="header-whisper">Bedtime adventures · Ages 4–8</p>
+          <ShelfSoundControl />
+        </div>
       </div>
     </header>
   );

@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { getPreferredPixelRatio } from '../responsive';
+import { renderQuality } from '../responsive';
 
 export function createRenderer(): THREE.WebGLRenderer {
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(getPreferredPixelRatio());
+  renderer.setPixelRatio(renderQuality.pixelRatio);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -23,8 +23,7 @@ export function addDefaultLighting(scene: THREE.Scene): DefaultLighting {
   const moonlight = new THREE.DirectionalLight(0xb9c7ff, 1.85);
   moonlight.position.set(-5, 9, 4);
   moonlight.castShadow = true;
-  const compactDisplay = Math.min(window.innerWidth, window.innerHeight) <= 820;
-  moonlight.shadow.mapSize.setScalar(compactDisplay ? 512 : 1024);
+  moonlight.shadow.mapSize.setScalar(renderQuality.shadowMapSize);
   scene.add(moonlight);
 
   const fill = new THREE.DirectionalLight(0x7657b7, 0.45);

@@ -1,11 +1,12 @@
 import {
+  clampStoryVolume,
   createStoryAudioContext,
   decodeStoryAudioData,
   fetchStoryAudioData,
+  STORY_MASTER_GAIN,
   StoryAudioSession,
 } from '@moonlit/story-runtime';
 
-const MASTER_VOLUME = 0.3;
 const RIVER_VOLUME = 0.08;
 const CHIRP_MIN_VOLUME = 0.35;
 const CHIRP_VOLUME_RANGE = 0.3;
@@ -57,6 +58,7 @@ export class AudioDirector {
   private angryGrowlRequested = false;
   private requested = false;
   private muted = false;
+  private volume = 1;
   private paused = false;
   private chirpState: LoadState = 'not-requested';
   private riverState: LoadState = 'not-requested';
@@ -111,15 +113,17 @@ export class AudioDirector {
 
   setMuted(muted: boolean): void {
     this.muted = muted;
-    if (this.master && this.context) {
-      this.master.gain.cancelScheduledValues(this.context.currentTime);
-      this.master.gain.setTargetAtTime(muted ? 0 : MASTER_VOLUME, this.context.currentTime, 0.08);
-    }
+    this.applyMasterGain();
     if (muted) this.clearChirpTimer();
     else if (!this.paused && this.context?.state === 'running' && this.requested) {
       void this.startBirdAmbience();
       void this.startRiverAmbience();
     }
+  }
+
+  setVolume(volume: number): void {
+    this.volume = clampStoryVolume(volume);
+    this.applyMasterGain();
   }
 
   getDiagnostics(): AudioDiagnostics {
@@ -300,11 +304,21 @@ export class AudioDirector {
   private createGraph(): void {
     this.context = createStoryAudioContext();
     this.master = this.context.createGain();
-    this.master.gain.value = this.muted ? 0 : MASTER_VOLUME;
+    this.master.gain.value = this.muted ? 0 : STORY_MASTER_GAIN * this.volume;
     this.master.connect(this.context.destination);
     this.ambience = this.context.createGain();
     this.ambience.gain.value = 1;
     this.ambience.connect(this.master);
+  }
+
+  private applyMasterGain(): void {
+    if (!this.master || !this.context) return;
+    this.master.gain.cancelScheduledValues(this.context.currentTime);
+    this.master.gain.setTargetAtTime(
+      this.muted ? 0 : STORY_MASTER_GAIN * this.volume,
+      this.context.currentTime,
+      0.08,
+    );
   }
 
   private abandonInterruptedContext(): void {

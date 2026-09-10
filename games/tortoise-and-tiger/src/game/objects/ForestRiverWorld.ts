@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { refreshInstancedMeshBounds } from '@moonlit/story-rendering';
 
 type SwayingTree = {
   crown: THREE.Group;
@@ -177,6 +178,10 @@ export class ForestRiverWorld {
     this.createWaterLife();
     this.createButterflies();
     this.createBirds();
+
+    this.group.traverse((object) => {
+      if (object instanceof THREE.InstancedMesh) refreshInstancedMeshBounds(object);
+    });
 
     this.sparklePositions = new Float32Array(72 * 3);
     for (let index = 0; index < 72; index += 1) {

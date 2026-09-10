@@ -1056,17 +1056,22 @@ button {
     padding: 5px 9px 5px 5px;
   }
 
-  .shell-secondary-dialogue {
-    right: max(12px, env(safe-area-inset-right));
+  .shell-secondary-dialogue,
+  .shell-secondary-dialogue.is-sound-effect,
+  .shell-secondary-dialogue.is-ambient-effect {
+    right: auto;
     bottom: max(12px, env(safe-area-inset-bottom));
-    left: auto;
+    left: 50%;
     width: min(58vw, 440px);
     padding: 10px 14px;
-    transform: translateY(14px) scale(0.98);
+    text-align: center;
+    transform: translate(-50%, 14px) scale(0.98);
   }
 
-  .shell-secondary-dialogue.is-visible {
-    transform: translateY(0) scale(1);
+  .shell-secondary-dialogue.is-visible,
+  .shell-secondary-dialogue.is-sound-effect.is-visible,
+  .shell-secondary-dialogue.is-ambient-effect.is-visible {
+    transform: translate(-50%, 0) scale(1);
   }
 
   .shell-objective {

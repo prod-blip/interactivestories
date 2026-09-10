@@ -1,6 +1,11 @@
+import {
+  exposeRenderDiagnostics,
+  resizeRendererToDisplaySize,
+  StoryRenderQuality,
+} from '@moonlit/story-rendering';
 import * as THREE from 'three';
 import { AudioDirector } from './AudioDirector';
-import { InfiniteForest } from './InfiniteForest';
+import { FiniteForest } from './FiniteForest';
 import { Input } from './Input';
 import {
   FINAL_GAMEPLAY_END_DISTANCE,
@@ -15,7 +20,6 @@ import {
 } from './RaceClearing';
 import { StoryCharacter } from './StoryCharacter';
 
-const MAX_PIXEL_RATIO = 1.75;
 const RABBIT_HOME = new THREE.Vector3(-2.35, 0, -10);
 const TORTOISE_HOME = new THREE.Vector3(2.35, 0, -10);
 const NAP_LANDING_OFFSET_X = 0.32;
@@ -57,12 +61,18 @@ type StorySequence =
   | 'endingTableau';
 
 export class Game {
+  private readonly parent: HTMLElement;
+  private readonly renderQuality = new StoryRenderQuality({
+    mobilePixelRatioCap: 1.5,
+    desktopPixelRatioCap: 1.75,
+    minimumPixelRatioCap: 1.25,
+  });
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
   private readonly camera = new THREE.PerspectiveCamera(54, 1, 0.1, 190);
   private readonly timer = new THREE.Timer();
   private readonly audio = new AudioDirector();
-  private readonly forest = new InfiniteForest();
+  private readonly forest = new FiniteForest();
   private readonly raceClearing = new RaceClearing();
   private readonly input = new Input();
   private readonly sky = createSky();
@@ -74,6 +84,9 @@ export class Game {
   private readonly sun = new THREE.DirectionalLight(0xffe3a1, 3.6);
   private readonly lookTarget = new THREE.Vector3();
   private readonly checkpointPoint = new THREE.Vector3();
+  private readonly projectedCheckpoint = new THREE.Vector3();
+  private readonly frameCamera = new THREE.Vector3();
+  private readonly frameLook = new THREE.Vector3();
   private animationId = 0;
   private running = false;
   private disposed = false;
@@ -107,21 +120,23 @@ export class Game {
   private reducedMotion = false;
 
   constructor(parent: HTMLElement) {
+    this.parent = parent;
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.16;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
-    this.renderer.domElement.setAttribute('aria-label', 'An endless sunny forest with rounded trees, rocks, flowers, mushrooms, and patches of long grass');
+    this.renderer.domElement.setAttribute('aria-label', 'A sunny forest clearing with rounded trees, rocks, flowers, mushrooms, and patches of long grass');
     parent.appendChild(this.renderer.domElement);
+    exposeRenderDiagnostics('tortoise-and-rabbit', this.renderer, this.renderQuality);
 
     this.scene.background = new THREE.Color(0x74cdf6);
     this.scene.fog = new THREE.Fog(0xa8dfcb, 52, 108);
     const hemisphere = new THREE.HemisphereLight(0xdff6ff, 0x6d8b3c, 2.25);
     this.sun.position.set(-38, 65, 28);
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(2048, 2048);
+    this.sun.shadow.mapSize.setScalar(this.renderQuality.shadowMapSize);
     this.sun.shadow.camera.near = 1;
     this.sun.shadow.camera.far = 150;
     this.sun.shadow.camera.left = -36;
@@ -486,7 +501,6 @@ export class Game {
     this.resetRabbitTransform();
     this.tortoise.group.position.copy(TORTOISE_HOME);
     this.tortoise.group.rotation.set(0, TORTOISE_FACING, 0);
-    this.forest.update(this.worldX, this.worldZ, true);
     this.positionCamera(true);
   }
 
@@ -496,6 +510,10 @@ export class Game {
 
   setMuted(muted: boolean): void {
     this.audio.setMuted(muted);
+  }
+
+  setVolume(volume: number): void {
+    this.audio.setVolume(volume);
   }
 
   setRaceGuideHandler(handler: (angle: number, distance: number, label: string) => void): void {
@@ -525,6 +543,7 @@ export class Game {
     this.animationId = requestAnimationFrame(this.tick);
     this.timer.update(timestamp);
     const delta = Math.min(this.timer.getDelta(), 0.05);
+    this.renderQuality.sampleFrame(delta);
     this.elapsed += delta;
     this.update(delta);
     this.resize();
@@ -538,10 +557,9 @@ export class Game {
     else this.updateCameraTransition(delta);
     this.updateStorySequence(delta);
     if (this.forest.group.visible) {
-      this.forest.update(this.camera.position.x, this.camera.position.z);
       this.forest.animate(ambientDelta);
     }
-    this.raceClearing.animate(delta);
+    if (this.raceClearing.group.visible) this.raceClearing.animate(delta);
     this.rabbit.update(delta);
     this.tortoise.update(delta);
 
@@ -707,8 +725,8 @@ export class Game {
     }
 
     const aheadZ = tortoiseZ - 10.5;
-    const desiredCamera = new THREE.Vector3(this.tortoise.group.position.x, 4.15, tortoiseZ + 7.4);
-    const desiredLook = new THREE.Vector3(this.raceClearing.centerXAtWorldZ(aheadZ), 1.05, aheadZ);
+    const desiredCamera = this.frameCamera.set(this.tortoise.group.position.x, 4.15, tortoiseZ + 7.4);
+    const desiredLook = this.frameLook.set(this.raceClearing.centerXAtWorldZ(aheadZ), 1.05, aheadZ);
     const smoothing = 1 - Math.exp(-delta * 3.2);
     this.camera.position.lerp(desiredCamera, smoothing);
     this.cameraLook.lerp(desiredLook, smoothing);
@@ -786,8 +804,8 @@ export class Game {
     }
 
     const aheadZ = tortoiseZ - 11.5;
-    const desiredCamera = new THREE.Vector3(this.tortoise.group.position.x, 4.15, tortoiseZ + 7.4);
-    const desiredLook = new THREE.Vector3(this.raceClearing.centerXAtWorldZ(aheadZ), 1.05, aheadZ);
+    const desiredCamera = this.frameCamera.set(this.tortoise.group.position.x, 4.15, tortoiseZ + 7.4);
+    const desiredLook = this.frameLook.set(this.raceClearing.centerXAtWorldZ(aheadZ), 1.05, aheadZ);
     const cameraSmoothing = 1 - Math.exp(-delta * 2.8);
     this.camera.position.lerp(desiredCamera, cameraSmoothing);
     this.cameraLook.lerp(desiredLook, cameraSmoothing);
@@ -839,8 +857,8 @@ export class Game {
     this.rabbit.group.rotation.set(0, THREE.MathUtils.lerp(0, heading, entryProgress), 0);
 
     const tortoiseZ = RACE_START_Z - SECOND_GAMEPLAY_END_DISTANCE;
-    const desiredCamera = new THREE.Vector3(this.rabbit.group.position.x + 0.65, 3.45, rabbitZ + 6.2);
-    const desiredLook = new THREE.Vector3(this.raceClearing.centerXAtWorldZ(tortoiseZ), 1.1, tortoiseZ);
+    const desiredCamera = this.frameCamera.set(this.rabbit.group.position.x + 0.65, 3.45, rabbitZ + 6.2);
+    const desiredLook = this.frameLook.set(this.raceClearing.centerXAtWorldZ(tortoiseZ), 1.1, tortoiseZ);
     const smoothing = 1 - Math.exp(-delta * 3.1);
     this.camera.position.lerp(desiredCamera, smoothing);
     this.cameraLook.lerp(desiredLook, smoothing);
@@ -855,8 +873,11 @@ export class Game {
 
   private updateFinalRace(delta: number): void {
     const movement = this.input.read();
-    const movingForward = movement.forward > 0;
-    const moving = movingForward || movement.sideways !== 0;
+    const guideAngle = this.calculateRaceGuideAngle(FINAL_GAMEPLAY_END_DISTANCE);
+    const targetIntent = movement.sideways * Math.sin(guideAngle)
+      + movement.forward * Math.cos(guideAngle);
+    const movingForward = targetIntent > 0.12;
+    const moving = Math.abs(targetIntent) > 0.12 || Math.abs(movement.sideways) > 0.12;
     if (movingForward) {
       this.gameplayDistance = Math.min(
         FINAL_GAMEPLAY_END_DISTANCE,
@@ -892,7 +913,9 @@ export class Game {
         1.45,
       ));
     }
-    this.updateTortoiseLateralMovement(movement.sideways, delta);
+    const lateralIntent = movement.sideways * Math.cos(guideAngle)
+      - movement.forward * Math.sin(guideAngle);
+    this.updateTortoiseLateralMovement(lateralIntent, delta);
     if (moving !== this.tortoiseMoving) {
       this.tortoiseMoving = moving;
       this.tortoise.playAnimation(moving ? 'Tortoise_Walk' : 'Tortoise_Determined', 0.2);
@@ -912,7 +935,7 @@ export class Game {
     this.raceClearing.pointOnTrail(tortoiseZ, this.tortoiseLateralOffset, this.tortoise.group.position);
     this.tortoise.group.position.y = TORTOISE_TRAIL_Y;
     this.tortoise.group.rotation.y = this.raceClearing.headingAtWorldZ(tortoiseZ)
-      + Math.PI - movement.sideways * 0.14;
+      + Math.PI - lateralIntent * 0.14;
 
     while (
       this.checkpointIndex < FINAL_RACE_CHECKPOINTS.length
@@ -924,12 +947,12 @@ export class Game {
 
     const finishZ = RACE_START_Z - FINISH_DISTANCE;
     const finishX = this.raceClearing.centerXAtWorldZ(finishZ);
-    const desiredCamera = new THREE.Vector3(
+    const desiredCamera = this.frameCamera.set(
       finishX + 8.6,
       6.7,
       finishZ - 4.6,
     );
-    const desiredLook = new THREE.Vector3(
+    const desiredLook = this.frameLook.set(
       finishX,
       1.15,
       finishZ + 10.5,
@@ -953,24 +976,22 @@ export class Game {
     label: string,
   ): void {
     if (!this.raceGuideHandler) return;
-    const targetZ = RACE_START_Z - targetDistance;
-    this.raceClearing.pointOnTrail(targetZ, 0, this.checkpointPoint);
-    const dx = this.checkpointPoint.x - this.tortoise.group.position.x;
-    const dz = this.checkpointPoint.z - this.tortoise.group.position.z;
-    const worldAngle = Math.atan2(dx, -dz);
-    const cameraAngle = Math.atan2(
-      this.cameraLook.x - this.camera.position.x,
-      -(this.cameraLook.z - this.camera.position.z),
-    );
-    const relativeAngle = Math.atan2(
-      Math.sin(worldAngle - cameraAngle),
-      Math.cos(worldAngle - cameraAngle),
-    );
+    const relativeAngle = this.calculateRaceGuideAngle(targetDistance);
     this.raceGuideHandler(
       relativeAngle,
       this.tortoise.group.position.distanceTo(this.checkpointPoint),
       label,
     );
+  }
+
+  private calculateRaceGuideAngle(targetDistance: number): number {
+    const targetZ = RACE_START_Z - targetDistance;
+    this.raceClearing.pointOnTrail(targetZ, 0, this.checkpointPoint);
+    this.projectedCheckpoint.copy(this.checkpointPoint).project(this.camera);
+    if (Number.isFinite(this.projectedCheckpoint.x) && Number.isFinite(this.projectedCheckpoint.y)) {
+      return Math.atan2(this.projectedCheckpoint.x, this.projectedCheckpoint.y);
+    }
+    return 0;
   }
 
   private updateTortoiseLateralMovement(sideways: number, delta: number): void {
@@ -1025,12 +1046,12 @@ export class Game {
     const finishZ = RACE_START_Z - FINISH_DISTANCE;
     const finishX = this.raceClearing.centerXAtWorldZ(finishZ);
     const resultFocus = THREE.MathUtils.smoothstep(this.rabbitDisappointmentElapsed, 0, 1.1);
-    const desiredCamera = new THREE.Vector3(
+    const desiredCamera = this.frameCamera.set(
       THREE.MathUtils.lerp(finishX + 7.3, finishX + 6.4, resultFocus),
       THREE.MathUtils.lerp(4.8, 3.9, resultFocus),
       THREE.MathUtils.lerp(finishZ - 5.2, finishZ - 2.7, resultFocus),
     );
-    const desiredLook = new THREE.Vector3(
+    const desiredLook = this.frameLook.set(
       finishX,
       THREE.MathUtils.lerp(1.15, 1.0, resultFocus),
       THREE.MathUtils.lerp(finishZ + 1.5, finishZ + 3.0, resultFocus),
@@ -1063,8 +1084,8 @@ export class Game {
     this.applyRabbitDisappointment(this.rabbitDisappointmentElapsed);
 
     const zoomProgress = THREE.MathUtils.smoothstep(this.storySequenceElapsed, 0, 5.6);
-    const wideCamera = new THREE.Vector3(finishX + 13.8, 9.2, finishZ + 15.5);
-    const wideLook = new THREE.Vector3(finishX, 1.3, finishZ + 0.4);
+    const wideCamera = this.frameCamera.set(finishX + 13.8, 9.2, finishZ + 15.5);
+    const wideLook = this.frameLook.set(finishX, 1.3, finishZ + 0.4);
     const frameSmoothing = 1 - Math.exp(-delta * (1.2 + zoomProgress * 0.7));
     this.camera.position.lerp(wideCamera, frameSmoothing);
     this.cameraLook.lerp(wideLook, frameSmoothing);
@@ -1110,15 +1131,9 @@ export class Game {
   }
 
   private resize(): void {
-    const width = this.renderer.domElement.parentElement?.clientWidth ?? window.innerWidth;
-    const height = this.renderer.domElement.parentElement?.clientHeight ?? window.innerHeight;
-    const pixelRatio = Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO);
-    const bufferWidth = Math.floor(width * pixelRatio);
-    const bufferHeight = Math.floor(height * pixelRatio);
-    if (this.renderer.domElement.width !== bufferWidth || this.renderer.domElement.height !== bufferHeight) {
-      this.renderer.setPixelRatio(pixelRatio);
-      this.renderer.setSize(width, height, false);
-      this.camera.aspect = width / Math.max(1, height);
+    if (resizeRendererToDisplaySize(this.renderer, this.camera, this.parent, this.renderQuality)) {
+      const width = this.parent.clientWidth;
+      const height = this.parent.clientHeight;
       this.camera.fov = width < height ? 62 : 54;
       this.camera.updateProjectionMatrix();
     }

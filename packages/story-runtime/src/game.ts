@@ -12,6 +12,7 @@ export interface MoonlitStoryAdapter {
   resume(): void;
   restart(): void;
   setMuted(muted: boolean): void;
+  setVolume(volume: number): void;
   onViewportChange?(viewport: StoryViewport): void;
 }
 
@@ -86,6 +87,9 @@ export function createStoryRuntime(storyId: string, story: MoonlitStoryAdapter):
         break;
       case 'moonlit:set-muted':
         story.setMuted(event.data.muted);
+        break;
+      case 'moonlit:set-volume':
+        story.setVolume(event.data.volume);
         break;
       case 'moonlit:viewport':
         applyViewport(event.data.viewport);

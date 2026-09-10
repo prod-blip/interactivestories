@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { exposeRenderDiagnostics } from '@moonlit/story-rendering';
 import { AudioDirector } from './audio/AudioDirector';
 import { getCinematicConfig } from './cinematic';
 import { InputController } from './input';
@@ -14,7 +15,7 @@ import { QuestMarker } from './objects/QuestMarker';
 import { SleepingLion } from './objects/SleepingLion';
 import { StarrySky } from './objects/StarrySky';
 import { TrappedLion } from './objects/TrappedLion';
-import { resizeRendererToDisplaySize } from './responsive';
+import { renderQuality, resizeRendererToDisplaySize } from './responsive';
 import { createRenderer, addDefaultLighting } from './scene/rendering';
 import type { GameState, InputState } from './types';
 import { Hud } from './ui/Hud';
@@ -141,6 +142,7 @@ export class Game {
 
     this.parent.classList.add('game-root');
     this.parent.appendChild(this.renderer.domElement);
+    exposeRenderDiagnostics('mouse-and-lion', this.renderer, renderQuality);
 
     this.input = new InputController(this.renderer.domElement);
     this.hud = new Hud(this.parent);
@@ -221,6 +223,10 @@ export class Game {
 
   setMuted(muted: boolean): void {
     this.audio.setMuted(muted);
+  }
+
+  setVolume(volume: number): void {
+    this.audio.setVolume(volume);
   }
 
   beginStoryIntro(): void {
@@ -409,6 +415,7 @@ export class Game {
     this.animationId = requestAnimationFrame(this.tick);
 
     const delta = Math.min(this.clock.getDelta(), 0.05);
+    renderQuality.sampleFrame(delta);
     resizeRendererToDisplaySize(this.renderer, this.camera);
 
     this.update(delta);

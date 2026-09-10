@@ -39,7 +39,11 @@ export class StoryCharacter {
       if (!(child instanceof THREE.Mesh)) return;
       child.castShadow = true;
       child.receiveShadow = true;
-      child.frustumCulled = false;
+      child.geometry.computeBoundingBox();
+      child.geometry.computeBoundingSphere();
+      // Leave room for limbs moving outside the bind-pose geometry bounds.
+      if (child.geometry.boundingSphere) child.geometry.boundingSphere.radius *= 1.35;
+      child.frustumCulled = true;
       const materials = Array.isArray(child.material) ? child.material : [child.material];
       materials.forEach((material) => {
         if (this.materialStates.has(material)) return;

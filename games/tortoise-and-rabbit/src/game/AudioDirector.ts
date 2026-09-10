@@ -1,6 +1,8 @@
 import {
+  clampStoryVolume,
   createStoryAudioContext,
   loadStoryAudioBuffer,
+  STORY_MASTER_GAIN,
   StoryAudioSession,
 } from '@moonlit/story-runtime';
 
@@ -35,6 +37,7 @@ export class AudioDirector {
   private started = false;
   private disposed = false;
   private muted = false;
+  private volume = 1;
 
   async start(): Promise<void> {
     if (this.disposed) return Promise.resolve();
@@ -79,8 +82,12 @@ export class AudioDirector {
 
   setMuted(muted: boolean): void {
     this.muted = muted;
-    if (!this.context || !this.master) return;
-    this.master.gain.setTargetAtTime(muted ? 0 : 0.62, this.context.currentTime, 0.04);
+    this.applyMasterGain();
+  }
+
+  setVolume(volume: number): void {
+    this.volume = clampStoryVolume(volume);
+    this.applyMasterGain();
   }
 
   dispose(): void {
@@ -327,8 +334,18 @@ export class AudioDirector {
   private createGraph(): void {
     this.context = createStoryAudioContext();
     this.master = this.context.createGain();
-    this.master.gain.value = this.muted ? 0 : 0.62;
+    this.master.gain.value = this.muted ? 0 : STORY_MASTER_GAIN * this.volume;
     this.master.connect(this.context.destination);
+  }
+
+  private applyMasterGain(): void {
+    if (!this.context || !this.master) return;
+    this.master.gain.cancelScheduledValues(this.context.currentTime);
+    this.master.gain.setTargetAtTime(
+      this.muted ? 0 : STORY_MASTER_GAIN * this.volume,
+      this.context.currentTime,
+      0.04,
+    );
   }
 
   private abandonInterruptedContext(): void {

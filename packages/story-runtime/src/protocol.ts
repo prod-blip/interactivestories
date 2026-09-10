@@ -29,6 +29,7 @@ export type HostToStoryMessage = RuntimeEnvelope & (
   | { type: 'moonlit:resume' }
   | { type: 'moonlit:restart' }
   | { type: 'moonlit:set-muted'; muted: boolean }
+  | { type: 'moonlit:set-volume'; volume: number }
   | { type: 'moonlit:viewport'; viewport: StoryViewport }
 );
 

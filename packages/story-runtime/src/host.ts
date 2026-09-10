@@ -23,6 +23,7 @@ export type StoryHost = {
   resume(): void;
   restart(): void;
   setMuted(muted: boolean): void;
+  setVolume(volume: number): void;
   dispose(): void;
 };
 
@@ -81,6 +82,9 @@ export function createStoryHost(
     },
     setMuted(muted) {
       post({ ...runtimeEnvelope(), type: 'moonlit:set-muted', muted });
+    },
+    setVolume(volume) {
+      post({ ...runtimeEnvelope(), type: 'moonlit:set-volume', volume });
     },
     dispose() {
       window.removeEventListener('message', onMessage);

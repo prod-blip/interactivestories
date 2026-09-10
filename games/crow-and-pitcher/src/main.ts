@@ -1,5 +1,6 @@
 import { createStoryRuntime, type StoryRuntime } from '@moonlit/story-runtime';
 import './style.css';
+import '../../../packages/story-assets/assets/ui/story-ending.css';
 import { Game } from './game/Game';
 
 const app = document.querySelector<HTMLElement>('#app');
@@ -39,6 +40,7 @@ async function bootstrap(): Promise<void> {
       else location.reload();
     },
     setMuted: (muted) => game?.setMuted(muted),
+    setVolume: (volume) => game?.setVolume(volume),
     onViewportChange: (viewport) => game?.onViewportChange(viewport),
   });
 
@@ -72,6 +74,12 @@ void bootstrap().catch((error: unknown) => {
   runtime?.reportError(error);
   setProgress(1, 'Unable to enter the garden');
   loader?.classList.add('has-error');
+});
+
+// A browser back/forward-cache restore must represent a fresh visit, never a
+// suspended pebble run from the previous visit.
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) window.location.reload();
 });
 
 window.addEventListener('beforeunload', () => {

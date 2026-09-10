@@ -1,4 +1,5 @@
 import type { StoryViewport } from '@moonlit/story-runtime';
+import { exposeRenderDiagnostics } from '@moonlit/story-rendering';
 import * as THREE from 'three';
 import { storyScenes } from '../story/script';
 import { AudioDirector } from './audio/AudioDirector';
@@ -6,7 +7,7 @@ import { Crow, type MovementBounds } from './characters/Crow';
 import { InputController } from './input';
 import { Pebble } from './objects/Pebble';
 import { Pitcher } from './objects/Pitcher';
-import { resizeRenderer } from './responsive';
+import { renderQuality, resizeRenderer } from './responsive';
 import { GardenScene } from './scenes/GardenScene';
 import type { StoryPhase } from './types';
 import { Hud } from './ui/Hud';
@@ -27,7 +28,6 @@ const RIM_PERCH_OFFSET = new THREE.Vector3(0, 0, -0.4);
 const CROW_COLLISION_RADIUS = 0.48;
 const PITCHER_COLLISION_RADIUS = 1.05 * 0.82 + CROW_COLLISION_RADIUS;
 const SHADOW_EXTENT = 50;
-const SHADOW_MAP_SIZE = 4096;
 const SHADOW_CENTER = new THREE.Vector3(0, 1.5, 0);
 const WALL_COLLISION_BOUNDS = {
   minX: GARDEN_WALL_POSITION.x - 8.5 - CROW_COLLISION_RADIUS,
@@ -101,6 +101,7 @@ export class Game {
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.domElement.setAttribute('aria-label', 'A calm summer storybook landscape with fields, an old tree, a garden wall, a cart, and a clay pitcher');
     parent.appendChild(this.renderer.domElement);
+    exposeRenderDiagnostics('crow-and-pitcher', this.renderer, renderQuality);
     this.input = new InputController(parent);
     this.hud = new Hud(parent);
 
@@ -123,7 +124,7 @@ export class Game {
     const hemisphere = new THREE.HemisphereLight(0xe5eff0, 0x927758, 2.4);
     this.sunLight.castShadow = true;
     this.sunLight.target = this.sunTarget;
-    this.sunLight.shadow.mapSize.set(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
+    this.sunLight.shadow.mapSize.setScalar(renderQuality.shadowMapSize);
     this.sunLight.shadow.camera.near = 1;
     this.sunLight.shadow.camera.left = -SHADOW_EXTENT;
     this.sunLight.shadow.camera.right = SHADOW_EXTENT;
@@ -200,6 +201,10 @@ export class Game {
     this.audio.setMuted(muted);
   }
 
+  setVolume(volume: number): void {
+    this.audio.setVolume(volume);
+  }
+
   enableAudio(): void {
     void this.audio.start().catch((error: unknown) => {
       console.warn('Unable to start story audio.', error);
@@ -251,6 +256,7 @@ export class Game {
     if (!this.running) return;
     this.animationId = requestAnimationFrame(this.tick);
     const delta = Math.min(0.05, this.clock.getDelta());
+    renderQuality.sampleFrame(delta);
     resizeRenderer(this.renderer, this.camera);
     this.update(delta);
     this.renderer.render(this.scene, this.camera);
@@ -483,7 +489,6 @@ export class Game {
       this.setPhase('carrying');
       this.audio.playPickup();
       this.hud.setObjective('Return to the pitcher', 'Pebble in the crow’s beak');
-      this.hud.showHint('Approach the pitcher from any side to drop the pebble.');
       this.hud.setCounter(this.droppedCount, this.pebbles.length, true);
       return;
     }
@@ -559,22 +564,8 @@ export class Game {
     this.completionHandler?.();
     this.hud.showEnding(storyScenes.moral, storyScenes.moralExplanation, {
       onRestart: () => this.restart(),
-      onExplore: () => this.startFreeExplore(),
       onMenu: () => this.goToMainMenu(),
     });
-  }
-
-  private startFreeExplore(): void {
-    this.hud.hideEnding();
-    this.setPhase('free-explore');
-    this.cameraMode = 'flight';
-    this.controlsEnabled = true;
-    this.crow.group.position.copy(this.pitcher.interactionPosition).add(new THREE.Vector3(0, 1.75, 1));
-    this.input.setEnabled(true);
-    this.input.setActionVisible(false);
-    this.hud.setObjective('Explore the quiet countryside', 'Free explore');
-    this.hud.showObjective('Fly wherever you would like.');
-    this.hud.updateCompass(0, -1, false);
   }
 
   private updateGuidance(): void {

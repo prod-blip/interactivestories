@@ -2,7 +2,6 @@ import type { DialogueLine } from '../../story/script';
 
 type EndingActions = {
   onRestart: () => void;
-  onExplore: () => void;
   onMenu: () => void;
 };
 
@@ -59,8 +58,10 @@ export class Hud {
     this.dialoguePanel.append(this.dialogueSpeaker, this.dialogueText);
     this.dialogue.append(this.dialoguePanel);
 
-    this.ending.className = 'story-card story-card--ending';
+    this.ending.className = 'story-ending moonlit-ending';
     this.ending.setAttribute('role', 'dialog');
+    this.ending.setAttribute('aria-modal', 'true');
+    this.ending.setAttribute('aria-labelledby', 'ending-title');
     this.root.append(this.objective, this.objectiveToast, this.hint, this.thought, this.counter);
     parent.append(this.root, this.dialogue, this.ending);
   }
@@ -128,20 +129,19 @@ export class Hud {
 
   showEnding(moral: string, explanation: string, actions: EndingActions): void {
     this.ending.innerHTML = `
+      <div class="story-ending__ornament" aria-hidden="true">◆</div>
       <div class="story-ending__card">
-        <p class="story-ending__eyebrow">The crow found a way.</p>
-        <h2>${moral}</h2>
+        <h2 id="ending-title"><span>${moral}</span></h2>
+        <div class="story-ending__divider" aria-hidden="true"><span></span><b>◆</b><span></span></div>
         <p class="story-ending__moral">${explanation}</p>
         <div class="story-ending__actions">
           <button type="button" data-action="restart">Play Again</button>
-          <button type="button" data-action="explore">Explore the World</button>
           <button type="button" data-action="menu">Main Menu</button>
         </div>
       </div>
     `;
     this.ending.classList.add('is-visible');
     this.ending.querySelector('[data-action="restart"]')?.addEventListener('click', actions.onRestart, { once: true });
-    this.ending.querySelector('[data-action="explore"]')?.addEventListener('click', actions.onExplore, { once: true });
     this.ending.querySelector('[data-action="menu"]')?.addEventListener('click', actions.onMenu, { once: true });
   }
 

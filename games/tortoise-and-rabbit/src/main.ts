@@ -1,5 +1,6 @@
 import { createStoryRuntime, type StoryRuntime } from '@moonlit/story-runtime';
 import './style.css';
+import '../../../packages/story-assets/assets/ui/story-ending.css';
 import { Game } from './game/Game';
 
 const app = document.querySelector<HTMLElement>('#app');
@@ -189,7 +190,7 @@ async function playOpeningScene(activeGame: Game): Promise<void> {
 
   await delay(450);
   hideGameplayBubble();
-  showObjective('Keep moving toward the finish line');
+  showObjective('Keep moving toward the checkpoint');
   raceGuide?.classList.add('is-visible');
   raceControls?.classList.add('is-visible');
   startAdaptiveDialogue(SLOW_SECOND_RACE_THOUGHTS);
@@ -264,7 +265,7 @@ async function playOpeningScene(activeGame: Game): Promise<void> {
   await showPopup(
     activeGame,
     'Narrator',
-    'And so the tortoise won the race, not by being the fastest, but by never giving up.\n\nHe was not the fastest, and he never tried to be.\n\nHe simply kept going when the rabbit stopped.\n\nAnd that is why slow and steady won the race.',
+    'And so the tortoise won the race, not by being the fastest, but by never giving up. He was not the fastest, and he never tried to be. He simply kept going when the rabbit stopped. And that is why slow and steady won the race.',
   );
 
   runtime?.markCompleted();
@@ -358,7 +359,7 @@ function showPassingNarration(): void {
   narratorLineTimer = window.setTimeout(() => {
     showGameplayLine(
       'Narrator',
-      'The tortoise did not stop.\n\nHe simply kept going, step by step.',
+      'The tortoise did not stop. He simply kept going, step by step.',
       3600,
       true,
     );
@@ -403,6 +404,7 @@ async function bootstrap(): Promise<void> {
     // and timer before beginning again from the title card.
     restart: () => window.location.reload(),
     setMuted: (muted) => game?.setMuted(muted),
+    setVolume: (volume) => game?.setVolume(volume),
     onViewportChange: (viewport) => game?.setReducedMotion(viewport.reducedMotion),
   });
 

@@ -22,7 +22,7 @@ const config: CapacitorConfig = {
       insetsHandling: 'disable',
     },
     SplashScreen: {
-      launchShowDuration: 1200,
+      launchShowDuration: 450,
       launchAutoHide: true,
       backgroundColor: '#090c18',
       androidScaleType: 'CENTER_CROP',
