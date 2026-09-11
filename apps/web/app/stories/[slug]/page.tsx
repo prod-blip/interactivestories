@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, BookOpenText, Clock3, Heart, MousePointer2, Volume2 } from 'lucide-react';
-import { BeginStoryButton } from '@/components/BeginStoryButton';
 import { Header } from '@/components/Header';
+import { StoryAccessAction } from '@/components/StoryAccessAction';
 import { Starfield } from '@/components/Starfield';
 import { StoryArtwork } from '@/components/StoryArtwork';
 import { getStory, stories } from '@/lib/stories';
@@ -39,7 +39,7 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
             <span><BookOpenText size={16} /> {story.ageRange}</span>
             <span><MousePointer2 size={16} /> {story.participation}</span>
           </div>
-          <BeginStoryButton href={`/stories/${story.slug}/play`} />
+          <StoryAccessAction storyId={story.slug} href={`/stories/${story.slug}/play`} />
           <p className="start-note"><Volume2 size={15} /> Sound begins only after you interact with the story.</p>
         </div>
       </section>

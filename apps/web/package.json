@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@capacitor/core": "8.5.1",
     "@moonlit/story-runtime": "*",
     "lucide-react": "latest",
     "next": "^16.3.4",

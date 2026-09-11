@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { GameFrame } from '@/components/GameFrame';
+import { ProtectedGameFrame } from '@/components/ProtectedGameFrame';
 import { getStory, stories } from '@/lib/stories';
 
 export function generateStaticParams() {
@@ -11,7 +11,7 @@ export default async function PlayPage({ params }: { params: Promise<{ slug: str
   if (!story || !story.playable) notFound();
 
   return (
-    <GameFrame
+    <ProtectedGameFrame
       storyId={story.slug}
       title={story.title}
       storyHref="/#stories"

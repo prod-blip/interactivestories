@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { DEFAULT_MASTER_VOLUME, readMasterVolume, writeMasterVolume } from '@/lib/audio-preferences';
 
-type GameFrameProps = {
+export type GameFrameProps = {
   storyId: string;
   title: string;
   storyHref: string;

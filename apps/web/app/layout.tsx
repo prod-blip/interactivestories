@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { NativeAppBridge } from '@/components/NativeAppBridge';
 import { LaunchExperience } from '@/components/LaunchExperience';
+import { StoryAccessProvider } from '@/components/StoryAccessProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -25,7 +26,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <NativeAppBridge />
         <LaunchExperience />
-        {children}
+        <StoryAccessProvider>{children}</StoryAccessProvider>
       </body>
     </html>
   );

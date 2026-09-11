@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url';
+import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
 
@@ -20,4 +21,11 @@ for (const [density, size] of Object.entries(sizes)) {
   }
 }
 
-console.log('Generated branded Android launcher icons.');
+const playStoreAssetRoot = path.join(mobileRoot, 'play-store/assets');
+await mkdir(playStoreAssetRoot, { recursive: true });
+await sharp(source)
+  .resize(512, 512)
+  .png()
+  .toFile(path.join(playStoreAssetRoot, 'icon.png'));
+
+console.log('Generated branded Android launcher and Play Store icons.');
