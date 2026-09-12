@@ -131,7 +131,7 @@ function installAudioDebugPanel(): void {
       `chirps: ${state.chirps} (${state.chirpBuffers}) started=${state.chirpStarted}`,
       `river: ${state.river} started=${state.riverStarted}`,
       `sniffs: ${state.sniffs} started=${state.sniffStarted}`,
-      `growl: ${state.growl} started=${state.growlStarted}`,
+      `friendly cue started: ${state.friendlyCueStarted}`,
       `last: ${state.lastEvent}`,
       `error: ${state.lastError || 'none'}`,
     ].join('\n');

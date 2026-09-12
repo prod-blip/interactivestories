@@ -8,7 +8,7 @@ export class RiverCompassUI {
   constructor(parent: HTMLElement) {
     this.root.className = 'river-compass';
     this.root.setAttribute('aria-live', 'polite');
-    this.root.setAttribute('aria-label', 'Safe riverbank direction');
+    this.root.setAttribute('aria-label', 'Sunny riverbank direction');
 
     const compass = document.createElement('div');
     compass.className = 'river-compass__dial';
@@ -23,7 +23,7 @@ export class RiverCompassUI {
     kicker.textContent = 'River landmark';
     const label = document.createElement('div');
     label.className = 'river-compass__label';
-    label.textContent = 'Safe riverbank';
+    label.textContent = 'Sunny riverbank';
     this.distance.className = 'river-compass__distance';
     copy.append(kicker, label, this.distance);
 

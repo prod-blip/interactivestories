@@ -99,13 +99,13 @@ type SceneFiveStage =
 type SceneFiveBStage =
   | 'approaching'
   | 'pushing'
-  | 'biting'
+  | 'second-push'
   | 'narrator'
-  | 'annoyed'
+  | 'puzzled'
   | 'tiger-complaint'
   | 'peeking'
   | 'tortoise-reply'
-  | 'scratching'
+  | 'considering'
   | 'tiger-question'
   | 'thinking'
   | 'complete';
@@ -193,7 +193,7 @@ const SCENE_TWO_NARRATION = 'The tortoise was not very big...\n\nand he was cert
 const SCENE_TWO_DIALOGUE = 'What a lovely day for a walk!';
 const SCENE_THREE_TORTOISE_START_Z = 8.8;
 const SCENE_THREE_TORTOISE_SPEED = 0.08;
-const SCENE_THREE_GROWL_AT = 2.45;
+const SCENE_THREE_CURIOUS_CHIME_AT = 2.45;
 const SCENE_THREE_APPROACH_AT = 3.15;
 const SCENE_THREE_TAIL_AT = 7;
 const SCENE_THREE_PAW_AT = 8.55;
@@ -201,17 +201,17 @@ const SCENE_THREE_STRIPES_AT = 10.1;
 const SCENE_THREE_FACE_AT = 11.65;
 const SCENE_THREE_HUNGRY_AT = 13.2;
 const SCENE_THREE_TIGER_ANIMATION_SPEED = 0.8;
-const SCENE_THREE_HUNGRY = 'Ohhh... I am so hungry!';
-const SCENE_THREE_SNIFF = 'Sniff... sniff...\n\nWhat\'s that?';
-const SCENE_THREE_LUNCH = 'Aha!\n\nLunch!';
+const SCENE_THREE_HUNGRY = 'Ohhh... what a lovely day!';
+const SCENE_THREE_SNIFF = 'Sniff... sniff...\n\nWho is walking by?';
+const SCENE_THREE_LUNCH = 'Aha!\n\nA little traveller!';
 const SCENE_FOUR_APPROACH_DURATION = 5.2;
 const SCENE_FOUR_TORTOISE_WALK_DURATION = 0.9;
 const SCENE_FOUR_CIRCLE_DURATION = 5.4;
 const SCENE_FOUR_TIGER_GROUND_Y = 0;
-const SCENE_FOUR_NARRATION = 'Suddenly, a hungry tiger stepped out of the bushes.';
-const SCENE_FOUR_TIGER_GREETING = 'Well, well, well...\n\nWhat have we here?';
-const SCENE_FOUR_TORTOISE_REPLY = 'Oh...\n\nHello, Tiger.';
-const SCENE_FOUR_TIGER_SNACK = 'You look like just the snack I was looking for!';
+const SCENE_FOUR_NARRATION = 'A curious tiger stepped out of the bushes to say hello.';
+const SCENE_FOUR_TIGER_GREETING = 'Hello there!\n\nWho have we here?';
+const SCENE_FOUR_TORTOISE_REPLY = 'Hello, Tiger.\n\nI am Tortoise.';
+const SCENE_FOUR_TIGER_SNACK = 'What a strong and shiny shell you have!';
 const SCENE_FIVE_REQUIRED_TAPS = 6;
 const SCENE_FIVE_TUCK_DURATION = 2.35;
 const SCENE_FIVE_SURPRISE_DURATION = 0.9;
@@ -223,33 +223,33 @@ const SCENE_FIVE_RETREAT_DURATION = 2;
 const SCENE_FIVE_RETREAT_DISTANCE = 1.35;
 const SCENE_FIVE_DISAPPOINTED_DURATION = 3.9;
 const SCENE_FIVE_TORTOISE_Z = 7.28;
-const SCENE_FIVE_OBJECTIVE = 'Quick! Hide inside your shell!';
+const SCENE_FIVE_OBJECTIVE = 'Show Tiger how your shell works!';
 const SCENE_FIVE_B_APPROACH_DURATION = 2.3;
 const SCENE_FIVE_B_PUSH_DURATION = 1.8;
-const SCENE_FIVE_B_BITE_DURATION = 3.15;
-const SCENE_FIVE_B_ANNOYED_DURATION = 0.9;
+const SCENE_FIVE_B_SECOND_PUSH_DURATION = 3.15;
+const SCENE_FIVE_B_PUZZLED_DURATION = 0.9;
 const SCENE_FIVE_B_PEEK_DURATION = 2.4;
-const SCENE_FIVE_B_SCRATCH_DURATION = 1.7;
+const SCENE_FIVE_B_CONSIDER_DURATION = 1.7;
 const SCENE_FIVE_B_REST_DISTANCE = 3.55;
 const SCENE_FIVE_B_THINK_DURATION = 3.2;
-const SCENE_FIVE_B_NARRATION = 'The tiger tried to bite the tortoise...\n\nbut the tortoise\'s shell was much too hard.';
-const SCENE_FIVE_B_TIGER_COMPLAINT = 'What kind of tortoise are you?!\n\nYou\'re as hard as a rock!';
-const SCENE_FIVE_B_TORTOISE_REPLY = 'Yes...\n\nMy shell can be rather troublesome.';
-const SCENE_FIVE_B_TIGER_QUESTION = 'How am I supposed to eat you if I can\'t even bite you?';
+const SCENE_FIVE_B_NARRATION = 'The tiger gently tapped and pushed the shell...\n\nbut it stayed strong and steady.';
+const SCENE_FIVE_B_TIGER_COMPLAINT = 'Your shell is as strong as a rock!';
+const SCENE_FIVE_B_TORTOISE_REPLY = 'Yes.\n\nIt keeps me snug wherever I go.';
+const SCENE_FIVE_B_TIGER_QUESTION = 'How does your shell stay so strong?';
 const SCENE_SIX_PAUSE_DURATION = 0.85;
 const SCENE_SIX_THINK_DURATION = 3.5;
-const SCENE_SIX_NARRATION = 'Then the clever tortoise had an idea.';
-const SCENE_SIX_TORTOISE_WAY = 'Hmm...\n\nThere may be one way.';
-const SCENE_SIX_TIGER_INTEREST = 'One way?\n\nTell me!';
-const SCENE_SIX_TORTOISE_SUN = 'My shell is hard because I\'ve been out in the sun.';
-const SCENE_SIX_TORTOISE_RIVER = 'But if you soak me in the river...\n\nperhaps I\'ll become nice and soft.';
+const SCENE_SIX_NARRATION = 'Then the clever tortoise had an idea for a little adventure.';
+const SCENE_SIX_TORTOISE_WAY = 'Hmm...\n\nWould you like to see?';
+const SCENE_SIX_TIGER_INTEREST = 'Oh yes!\n\nShow me!';
+const SCENE_SIX_TORTOISE_SUN = 'The warm sun helps my shell stay strong.';
+const SCENE_SIX_TORTOISE_RIVER = 'And cool river water makes it sparkle.\n\nShall we go there?';
 const SCENE_SEVEN_LAUGH_DURATION = 1.4;
 const SCENE_SEVEN_CAMERA_SETUP_DURATION = 1.35;
 const SCENE_SEVEN_PICKUP_DURATION = 3.6;
 const SCENE_SEVEN_REVEAL_DURATION = 1.35;
-const SCENE_SEVEN_TIGER_PROUD = 'Ha!\n\nWhat a wonderful idea!';
-const SCENE_SEVEN_TORTOISE_FLATTER = 'Oh yes.\n\nVery clever of you.';
-const SCENE_SEVEN_NARRATION = 'The tiger decided to lift the tortoise and throw him into the water.';
+const SCENE_SEVEN_TIGER_PROUD = 'What a wonderful idea!\n\nI can help you get there.';
+const SCENE_SEVEN_TORTOISE_FLATTER = 'Thank you, Tiger.\n\nThat is very kind.';
+const SCENE_SEVEN_NARRATION = 'The tiger carefully lifted the tortoise and carried him towards the river.';
 const SCENE_EIGHT_DURATION = 10.4;
 const SCENE_EIGHT_TIGER_SOFT_AT = 0.9;
 const SCENE_EIGHT_TIGER_PROUD_AT = 3.45;
@@ -257,18 +257,18 @@ const SCENE_EIGHT_TORTOISE_CLOSE_AT = 6.05;
 const SCENE_EIGHT_ARRIVING_AT = 8.65;
 const SCENE_EIGHT_TORTOISE_PEEK_PROGRESS = 0.78;
 const SCENE_EIGHT_TORTOISE_PEEK_SPEED = 1.02;
-const SCENE_EIGHT_TIGER_SOFT = 'Soon you\'ll be nice and soft!';
-const SCENE_EIGHT_TIGER_PROUD = 'What a clever tiger I am!';
+const SCENE_EIGHT_TIGER_SOFT = 'The river is just ahead!';
+const SCENE_EIGHT_TIGER_PROUD = 'What a lovely adventure this is!';
 const SCENE_EIGHT_TORTOISE_CLOSE = 'Just a little closer...';
-const SCENE_NINE_TIGER_ARRIVAL = 'Here we are!\n\nInto the water you go.';
-const SCENE_NINE_TORTOISE_DEEP = 'Make sure you throw me right into the deep water.';
-const SCENE_NINE_TIGER_QUESTION = 'The deep water?';
-const SCENE_NINE_TORTOISE_EXPLAIN = 'Oh yes.\n\nThat\'s the only way to make my shell really soft.';
-const SCENE_NINE_TIGER_AGREES = 'Then deep water it is!';
+const SCENE_NINE_TIGER_ARRIVAL = 'Here we are!\n\nI will set you down gently.';
+const SCENE_NINE_TORTOISE_DEEP = 'Please place me where the water is deep enough to swim.';
+const SCENE_NINE_TIGER_QUESTION = 'Ready for a swim?';
+const SCENE_NINE_TORTOISE_EXPLAIN = 'Oh yes!\n\nThis is where I can show you what I do best.';
+const SCENE_NINE_TIGER_AGREES = 'Then into the river we go!';
 const SCENE_TEN_SETTLE_DURATION = 0.85;
-const SCENE_TEN_BACKSWING_DURATION = 1.25;
-const SCENE_TEN_FORWARD_SWING_DURATION = 1.05;
-const SCENE_TEN_FLIGHT_DURATION = 2.55;
+const SCENE_TEN_BACKSWING_DURATION = 1.45;
+const SCENE_TEN_FORWARD_SWING_DURATION = 1.25;
+const SCENE_TEN_FLIGHT_DURATION = 1.55;
 const SCENE_TEN_SPLASH_DURATION = 1.35;
 const SCENE_TEN_WAIT_DURATION = 3.2;
 const SCENE_ELEVEN_SILENCE_DURATION = 1.15;
@@ -280,44 +280,44 @@ const SCENE_ELEVEN_SPEECH_DURATION = 2.55;
 const SCENE_ELEVEN_MIN_SWIM_SPEED = 0.85;
 const SCENE_ELEVEN_FORWARD_BOOST = 2.45;
 const SCENE_ELEVEN_STEER_SPEED = 3.15;
-const SCENE_ELEVEN_TIGER_CHASE_SPEED = 4.15;
+const SCENE_ELEVEN_TIGER_CHASE_SPEED = 2.15;
 const SCENE_ELEVEN_TIGER_BANK_LEAD = 2.8;
 const SCENE_ELEVEN_SWIM_Y = -0.29;
 const SCENE_ELEVEN_SAFE_OBJECTIVE_DURATION = 1.8;
 const SCENE_ELEVEN_SAFE_ARRIVAL_DURATION = 0.8;
 const SCENE_ELEVEN_TIGER_LOOK_BACK_DURATION = 2.85;
-const SCENE_ELEVEN_TIGER_WONDERS = 'Hmm...\n\nIs he soft yet?';
+const SCENE_ELEVEN_TIGER_WONDERS = 'Hmm...\n\nWhere did he go?';
 const SCENE_ELEVEN_TORTOISE_THANKS = 'Thank you, Tiger!';
-const SCENE_ELEVEN_TIGER_QUESTION = 'Thank me?';
-const SCENE_ELEVEN_TORTOISE_ESCAPE = 'You just helped me escape!';
-const SCENE_ELEVEN_OBJECTIVE = 'Swim away from the tiger!';
+const SCENE_ELEVEN_TIGER_QUESTION = 'For what?';
+const SCENE_ELEVEN_TORTOISE_ESCAPE = 'For helping me reach my favourite river!';
+const SCENE_ELEVEN_OBJECTIVE = 'Swim along the river!';
 const SCENE_ELEVEN_SPEECH = [
-  'This is my home!',
-  'You can\'t catch me here!',
-  'Keep swimming!',
-  'Almost there!',
+  'The water feels wonderful!',
+  'Around the lilies!',
+  'What a lovely swim!',
+  'Nearly there!',
 ] as const;
 const SCENE_ELEVEN_SPEECH_PROGRESS = [0.12, 0.36, 0.61, 0.84] as const;
-const SCENE_ELEVEN_SAFE_OBJECTIVE = 'Reach the safe riverbank!';
+const SCENE_ELEVEN_SAFE_OBJECTIVE = 'Reach the sunny riverbank!';
 const SCENE_ELEVEN_TIGER_SAFE_SPEECH = [
-  'Come back here, you tricky tortoise!',
-  'How can he swim so fast?',
-  'Oh no... my lunch is getting away!',
+  'What a wonderful swimmer!',
+  'Look how fast he goes!',
+  'Well done, Tortoise!',
 ] as const;
 const SCENE_ELEVEN_TIGER_SAFE_PROGRESS = [0.08, 0.38, 0.68] as const;
-const SCENE_ELEVEN_SAFE_NARRATION = 'Safe at last, the clever tortoise reached the peaceful riverbank, while the hungry tiger was left far behind.';
+const SCENE_ELEVEN_SAFE_NARRATION = 'The clever tortoise reached the sunny riverbank, while the tiger watched in amazement.';
 const SCENE_THIRTEEN_CLIMB_DURATION = 2.45;
 const SCENE_THIRTEEN_SHAKE_DURATION = 1.55;
 const SCENE_THIRTEEN_BRAIN_PAUSE_DURATION = 0.72;
 const SCENE_THIRTEEN_CONFUSED_DURATION = 1.15;
 const SCENE_THIRTEEN_CHUCKLE_DURATION = 1.85;
-const SCENE_THIRTEEN_TIGER_ACCUSES = 'You tricked me!';
-const SCENE_THIRTEEN_TORTOISE_STRENGTH = 'I couldn\'t beat you with strength...';
-const SCENE_THIRTEEN_TORTOISE_BRAIN = 'So I used my brain instead!';
-const SCENE_THIRTEEN_TIGER_REFLECTS = 'Hmm...\n\nPerhaps I should have thought about that.';
+const SCENE_THIRTEEN_TIGER_ACCUSES = 'That was a clever idea!';
+const SCENE_THIRTEEN_TORTOISE_STRENGTH = 'I may be small and slow...';
+const SCENE_THIRTEEN_TORTOISE_BRAIN = 'But thoughtful ideas can be very strong!';
+const SCENE_THIRTEEN_TIGER_REFLECTS = 'I will remember that.\n\nWell done, Tortoise!';
 const SCENE_FOURTEEN_NARRATOR_DELAY = 1.35;
 const SCENE_FOURTEEN_PULL_DURATION = 11.5;
-const SCENE_FOURTEEN_NARRATION = 'And so the little tortoise escaped the mighty tiger...\n\nnot because he was stronger,\n\nbut because he stopped, thought carefully and used his clever mind.';
+const SCENE_FOURTEEN_NARRATION = 'And so the tortoise and the tiger shared a wonderful adventure...\n\nall because the tortoise stopped, thought carefully and used his clever mind.';
 const STORY_SCENE_ORDER: readonly StorySceneId[] = [
   'scene-1',
   'scene-2',
@@ -383,7 +383,7 @@ export class Game {
   private readonly sceneFiveShellContact = new THREE.Vector3();
   private readonly sceneFiveBApproachStart = new THREE.Vector3();
   private readonly sceneFiveBAttackPosition = new THREE.Vector3();
-  private readonly sceneFiveBBiteStart = new THREE.Vector3();
+  private readonly sceneFiveBRestPosition = new THREE.Vector3();
   private readonly sceneFiveBTigerToShell = new THREE.Vector3();
   private readonly sceneSixRiverDirection = new THREE.Vector3();
   private readonly sceneSevenTigerPickupStart = new THREE.Vector3();
@@ -462,7 +462,6 @@ export class Game {
   private sceneFivePawContactDistance: number | undefined;
   private sceneFiveBStage: SceneFiveBStage = 'approaching';
   private sceneFiveBStageElapsed = 0;
-  private sceneFiveBBiteDistance: number | undefined;
   private sceneSixStage: SceneSixStage = 'narrator';
   private sceneSixStageElapsed = 0;
   private sceneSixTigerFacingYaw = 0;
@@ -607,17 +606,17 @@ export class Game {
     report(1, this.activeScene === 'scene-14'
       ? 'The story ending is ready'
       : this.activeScene === 'scene-13'
-      ? 'The tortoise has reached safety'
+      ? 'The friends are ready to reflect'
       : this.activeScene === 'scene-11'
-      ? 'The river escape is ready'
+      ? 'The river adventure is ready'
       : this.activeScene === 'scene-10'
-      ? 'The river is ready for the tiger\'s throw'
+      ? 'The river is ready for a gentle splash'
       : this.activeScene === 'scene-9'
       ? 'The tiger has reached the riverbank'
       : this.activeScene === 'scene-8'
       ? 'The tiger is carrying the tortoise to the river'
       : this.activeScene === 'scene-7'
-      ? 'The tiger is ready to carry out his plan'
+      ? 'The tiger is ready to help'
       : this.activeScene === 'scene-6'
       ? 'The tortoise has an idea'
       : this.activeScene === 'scene-5b'
@@ -879,7 +878,7 @@ export class Game {
       -0.18,
       this.sceneFiveTortoiseZ,
     );
-    this.tortoise.playAnimation(TORTOISE_ANIMATIONS.scared, 0, 0.76);
+    this.tortoise.playAnimation(TORTOISE_ANIMATIONS.idle, 0, 0.76);
 
     this.sceneFiveTigerStart.set(
       this.tortoise.group.position.x - 2.25,
@@ -914,7 +913,6 @@ export class Game {
     this.sceneElapsed = 0;
     this.sceneFiveBStage = 'approaching';
     this.sceneFiveBStageElapsed = 0;
-    this.sceneFiveBBiteDistance = undefined;
     this.butterfly.setVisible(false);
 
     this.tortoise.group.position.set(
@@ -1197,12 +1195,12 @@ export class Game {
     this.sceneTenThrowStart.copy(this.tortoise.group.position);
     this.sceneTenBackswing
       .copy(this.sceneTenThrowStart)
-      .addScaledVector(this.sceneTenThrowDirection, -0.72);
-    this.sceneTenBackswing.y += 0.2;
+      .addScaledVector(this.sceneTenThrowDirection, 0.58);
+    this.sceneTenBackswing.y = 0.28;
     this.sceneTenRelease
       .copy(this.tiger.group.position)
       .addScaledVector(this.sceneTenThrowDirection, 1.95);
-    this.sceneTenRelease.y = 1.32;
+    this.sceneTenRelease.y = 0.24;
     this.sceneTenFlightBaseYaw = this.tortoise.group.rotation.y;
     this.sceneTenFlightBaseRoll = this.tortoise.group.rotation.z;
     this.tiger.playAnimation(TIGER_ANIMATIONS.calmIdle, 0, 0.7);
@@ -1566,9 +1564,9 @@ export class Game {
     this.sceneThreeStageElapsed += delta;
     this.moveTortoiseAlongBank(delta, SCENE_THREE_TORTOISE_SPEED);
 
-    if (!this.sceneThreeGrowlPlayed && this.sceneElapsed >= SCENE_THREE_GROWL_AT) {
+    if (!this.sceneThreeGrowlPlayed && this.sceneElapsed >= SCENE_THREE_CURIOUS_CHIME_AT) {
       this.sceneThreeGrowlPlayed = true;
-      this.audio.playStomachGrowl();
+      this.audio.playCuriousChime();
     }
 
     if (this.sceneThreeStage === 'peace' && this.sceneElapsed >= SCENE_THREE_APPROACH_AT) {
@@ -1762,7 +1760,7 @@ export class Game {
       this.tortoise.playAnimation(TORTOISE_ANIMATIONS.idle, 0.3, 0.72);
     } else if (stage === 'worried') {
       this.tiger.playAnimation(TIGER_ANIMATIONS.calmIdle, 0.3, 0.8);
-      this.tortoise.playAnimation(TORTOISE_ANIMATIONS.scared, 0.36, 0.78);
+      this.tortoise.playAnimation(TORTOISE_ANIMATIONS.idle, 0.36, 0.78);
     } else if (stage === 'shell-look' || stage === 'complete') {
       this.tiger.playAnimation(TIGER_ANIMATIONS.calmIdle, 0.3, 0.8);
       this.tortoise.playAnimation(TORTOISE_ANIMATIONS.headShake, 0.38, 0.62);
@@ -2192,45 +2190,25 @@ export class Game {
       );
       this.updateSceneFiveBPushContact(reachIn * release);
       if (this.sceneFiveBStageElapsed >= SCENE_FIVE_B_PUSH_DURATION) {
-        this.setSceneFiveBStage('biting');
+        this.setSceneFiveBStage('second-push');
       }
-    } else if (this.sceneFiveBStage === 'biting') {
-      const reachIn = THREE.MathUtils.smoothstep(this.sceneFiveBStageElapsed, 0.32, 1.15);
-      const release = 1 - THREE.MathUtils.smoothstep(this.sceneFiveBStageElapsed, 2.3, 3.05);
-      const biteReach = reachIn * release;
-      this.sceneFiveTigerDirection
-        .copy(this.tortoise.group.position)
-        .sub(this.sceneFiveBBiteStart)
-        .setY(0)
-        .normalize();
-      this.tiger.group.position
-        .copy(this.sceneFiveBBiteStart)
-        .addScaledVector(this.sceneFiveTigerDirection, biteReach * 0.3);
-      this.tiger.group.position.y = SCENE_FOUR_TIGER_GROUND_Y;
-      this.faceTigerTowardTortoise();
-      this.sceneFiveShellContact
-        .copy(this.tortoise.group.position)
-        .addScaledVector(this.sceneFiveTigerDirection, -0.46);
-      this.sceneFiveShellContact.y = 0.92;
-      // Keep the exported neck and head tracks untouched. The whole tiger
-      // eases forward slightly while the authored bite clip does the acting.
-      this.sceneFiveBBiteDistance = this.tiger.getBoneDistanceTo(
-        'lower_jaw',
-        this.sceneFiveShellContact,
-      );
-      if (this.sceneFiveBStageElapsed >= SCENE_FIVE_B_BITE_DURATION) {
+    } else if (this.sceneFiveBStage === 'second-push') {
+      const firstTap = this.getSceneFiveKnockPulse(this.sceneFiveBStageElapsed, 0.72, 0.42);
+      const secondTap = this.getSceneFiveKnockPulse(this.sceneFiveBStageElapsed, 1.82, 0.42);
+      this.updateSceneFiveBPushContact(Math.max(firstTap, secondTap) * 0.72);
+      if (this.sceneFiveBStageElapsed >= SCENE_FIVE_B_SECOND_PUSH_DURATION) {
         this.setSceneFiveBStage('narrator');
       }
-    } else if (this.sceneFiveBStage === 'annoyed') {
-      if (this.sceneFiveBStageElapsed >= SCENE_FIVE_B_ANNOYED_DURATION) {
+    } else if (this.sceneFiveBStage === 'puzzled') {
+      if (this.sceneFiveBStageElapsed >= SCENE_FIVE_B_PUZZLED_DURATION) {
         this.setSceneFiveBStage('tiger-complaint');
       }
     } else if (this.sceneFiveBStage === 'peeking') {
       if (this.sceneFiveBStageElapsed >= SCENE_FIVE_B_PEEK_DURATION) {
         this.setSceneFiveBStage('tortoise-reply');
       }
-    } else if (this.sceneFiveBStage === 'scratching') {
-      if (this.sceneFiveBStageElapsed >= SCENE_FIVE_B_SCRATCH_DURATION) {
+    } else if (this.sceneFiveBStage === 'considering') {
+      if (this.sceneFiveBStageElapsed >= SCENE_FIVE_B_CONSIDER_DURATION) {
         this.setSceneFiveBStage('tiger-question');
       }
     } else if (this.sceneFiveBStage === 'thinking') {
@@ -2253,16 +2231,19 @@ export class Game {
     if (stage === 'pushing') {
       this.tiger.group.position.copy(this.sceneFiveBAttackPosition);
       this.tiger.playAnimation(TIGER_ANIMATIONS.calmIdle, 0.2, 0.84);
-    } else if (stage === 'biting') {
-      this.sceneFiveBBiteStart.copy(this.tiger.group.position);
-      this.tiger.playAnimationOnce(TIGER_ANIMATIONS.bite, 0.22, 1.08, true);
+    } else if (stage === 'second-push') {
+      this.sceneFiveBRestPosition.copy(this.tiger.group.position);
+      this.tiger.playAnimation(TIGER_ANIMATIONS.calmIdle, 0.22, 0.82);
+      this.shellUi.showSecondaryDialogue('Tiger', 'tap... tap...');
+      this.audio.playShellKnock();
     } else if (stage === 'narrator') {
-      this.tiger.group.position.copy(this.sceneFiveBBiteStart);
+      this.tiger.group.position.copy(this.sceneFiveBRestPosition);
       this.ui.showNarrator(SCENE_FIVE_B_NARRATION, () => {
-        if (this.activeScene === 'scene-5b') this.setSceneFiveBStage('annoyed');
+        if (this.activeScene === 'scene-5b') this.setSceneFiveBStage('puzzled');
       });
-    } else if (stage === 'annoyed') {
+    } else if (stage === 'puzzled') {
       this.tiger.playAnimationOnce(TIGER_ANIMATIONS.disappointed, 0.26, 1.06, true);
+      this.audio.playCuriousChime();
     } else if (stage === 'tiger-complaint') {
       this.ui.showDialogue('Tiger', SCENE_FIVE_B_TIGER_COMPLAINT, () => {
         if (this.activeScene === 'scene-5b') this.setSceneFiveBStage('peeking');
@@ -2274,11 +2255,10 @@ export class Game {
       this.tiger.playAnimation(TIGER_ANIMATIONS.calmIdle, 0.28, 0.76);
     } else if (stage === 'tortoise-reply') {
       this.ui.showDialogue('Tortoise', SCENE_FIVE_B_TORTOISE_REPLY, () => {
-        if (this.activeScene === 'scene-5b') this.setSceneFiveBStage('scratching');
+        if (this.activeScene === 'scene-5b') this.setSceneFiveBStage('considering');
       });
-    } else if (stage === 'scratching') {
-      // The rig has no convincing quadruped head-scratch clip. A quiet,
-      // puzzled breathing pause reads naturally without forcing the foreleg.
+    } else if (stage === 'considering') {
+      // A quiet, puzzled breathing pause keeps the exchange warm and readable.
       this.tiger.playAnimation(TIGER_ANIMATIONS.calmIdle, 0.48, 0.68);
     } else if (stage === 'tiger-question') {
       this.ui.showDialogue('Tiger', SCENE_FIVE_B_TIGER_QUESTION, () => {
@@ -2319,9 +2299,9 @@ export class Game {
       height = THREE.MathUtils.lerp(4.75, 4.25, continuityProgress);
     } else if (
       this.sceneFiveBStage === 'tiger-complaint'
-      || this.sceneFiveBStage === 'scratching'
+      || this.sceneFiveBStage === 'considering'
       || this.sceneFiveBStage === 'tiger-question'
-      || this.sceneFiveBStage === 'annoyed'
+      || this.sceneFiveBStage === 'puzzled'
     ) {
       this.desiredCameraTarget.lerp(tiger, 0.43);
       distance = 6.9;
@@ -2864,9 +2844,9 @@ export class Game {
         0,
         SCENE_TEN_BACKSWING_DURATION,
       );
-      this.tiger.setThrowPose(THREE.MathUtils.lerp(0, -0.46, progress));
+      this.tiger.setThrowPose(THREE.MathUtils.lerp(0, 0.32, progress));
       this.tortoise.group.position.lerpVectors(this.sceneTenThrowStart, this.sceneTenBackswing, progress);
-      this.tortoise.group.rotation.z = this.sceneTenFlightBaseRoll - progress * 0.22;
+      this.tortoise.group.rotation.z = THREE.MathUtils.lerp(this.sceneTenFlightBaseRoll, 0, progress);
       if (this.sceneTenStageElapsed >= SCENE_TEN_BACKSWING_DURATION) {
         this.setSceneTenStage('forward-swing');
       }
@@ -2876,17 +2856,17 @@ export class Game {
         0,
         1,
       );
-      const releaseMotion = progress * progress;
+      const releaseMotion = THREE.MathUtils.smoothstep(progress, 0, 1);
       const neckMotion = THREE.MathUtils.smoothstep(progress, 0, 1);
-      this.tiger.setThrowPose(THREE.MathUtils.lerp(-0.46, 1, neckMotion));
+      this.tiger.setThrowPose(THREE.MathUtils.lerp(0.32, 0.56, neckMotion));
       this.tortoise.group.position.lerpVectors(
         this.sceneTenBackswing,
         this.sceneTenRelease,
         releaseMotion,
       );
       this.tortoise.group.rotation.z = THREE.MathUtils.lerp(
-        this.sceneTenFlightBaseRoll - 0.22,
-        this.sceneTenFlightBaseRoll + 0.12,
+        0,
+        0.03,
         releaseMotion,
       );
       if (this.sceneTenStageElapsed >= SCENE_TEN_FORWARD_SWING_DURATION) {
@@ -2898,14 +2878,14 @@ export class Game {
         0,
         1,
       );
-      const followThrough = 1 - THREE.MathUtils.smoothstep(progress, 0, 0.32);
-      this.tiger.setThrowPose(followThrough);
+      const followThrough = 1 - THREE.MathUtils.smoothstep(progress, 0, 0.48);
+      this.tiger.setThrowPose(followThrough * 0.56);
       this.sceneTenArcPoint.lerpVectors(this.sceneTenRelease, this.sceneTenSplashPoint, progress);
-      this.sceneTenArcPoint.y += Math.sin(progress * Math.PI) * 3.05;
+      this.sceneTenArcPoint.y += Math.sin(progress * Math.PI) * 0.28;
       this.tortoise.group.position.copy(this.sceneTenArcPoint);
-      this.tortoise.group.rotation.x = Math.sin(progress * Math.PI) * 0.16;
-      this.tortoise.group.rotation.y = this.sceneTenFlightBaseYaw + progress * 0.24;
-      this.tortoise.group.rotation.z = this.sceneTenFlightBaseRoll + 0.12 - progress * 0.58;
+      this.tortoise.group.rotation.x = Math.sin(progress * Math.PI) * 0.04;
+      this.tortoise.group.rotation.y = this.sceneTenFlightBaseYaw;
+      this.tortoise.group.rotation.z = THREE.MathUtils.lerp(0.03, 0, progress);
       if (this.sceneTenStageElapsed >= SCENE_TEN_FLIGHT_DURATION) {
         this.setSceneTenStage('splash');
       }
@@ -2932,8 +2912,8 @@ export class Game {
       this.sceneTenThrowStart.copy(this.tortoise.group.position);
       this.sceneTenBackswing
         .copy(this.sceneTenThrowStart)
-        .addScaledVector(this.sceneTenThrowDirection, -0.72);
-      this.sceneTenBackswing.y += 0.2;
+        .addScaledVector(this.sceneTenThrowDirection, 0.58);
+      this.sceneTenBackswing.y = 0.28;
     } else if (stage === 'flight') {
       this.tortoise.setFullyHidden(false);
       this.tortoise.setPeekOnly(true);
@@ -2958,8 +2938,8 @@ export class Game {
   }
 
   private updateSceneTenCamera(delta: number, immediate: boolean): void {
-    // Keep the river conversation's side-on composition through the throw.
-    // A cut to a wider angle exposed the deliberately simple carry animation.
+    // Keep the river conversation's side-on composition through the gentle
+    // set-down so the careful movement remains easy to read.
     this.desiredCameraTarget.copy(this.tiger.group.position).lerp(
       this.sceneTenThrowStart,
       0.28,
@@ -3258,7 +3238,7 @@ export class Game {
       this.sceneElevenSafeSpeechIndex += 1;
       if (speechIndex === 0) {
         this.sceneElevenTigerLookBackTimer = SCENE_ELEVEN_TIGER_LOOK_BACK_DURATION;
-        this.audio.playAngryGrowl();
+        this.audio.playCuriousChime();
       }
     } else {
       this.updateSceneElevenSpeechTimer(delta);
@@ -3536,7 +3516,7 @@ export class Game {
       this.tortoise.playAnimationOnce(TORTOISE_ANIMATIONS.headShake, 0.32, 0.78, false);
     } else if (stage === 'tiger-accuses') {
       this.tortoise.playAnimation(TORTOISE_ANIMATIONS.idle, 0.42, 0.74);
-      this.audio.playAngryGrowl();
+      this.audio.playCuriousChime();
       this.ui.showDialogue('Tiger', SCENE_THIRTEEN_TIGER_ACCUSES, () => {
         if (this.activeScene === 'scene-13') this.setSceneThirteenStage('tortoise-strength');
       });
@@ -4182,17 +4162,17 @@ export class Game {
         this.setSceneFiveBStage('pushing');
         this.sceneFiveBStageElapsed = SCENE_FIVE_B_PUSH_DURATION * 0.52;
         this.updateSceneFiveB(0);
-      } else if (checkpoint === 'bite' || checkpoint === 'biting') {
+      } else if (checkpoint === 'tap' || checkpoint === 'second-push' || checkpoint === 'bite' || checkpoint === 'biting') {
         this.setSceneFiveBStage('pushing');
-        this.setSceneFiveBStage('biting');
+        this.setSceneFiveBStage('second-push');
         this.tiger.setCurrentAnimationProgress(0.48);
         this.sceneFiveBStageElapsed = 1.45;
         this.updateSceneFiveB(0);
       } else if (checkpoint === 'narrator') {
-        this.sceneFiveBBiteStart.copy(this.sceneFiveBAttackPosition);
+        this.sceneFiveBRestPosition.copy(this.sceneFiveBAttackPosition);
         this.setSceneFiveBStage('narrator');
-      } else if (checkpoint === 'annoyed') {
-        this.setSceneFiveBStage('annoyed');
+      } else if (checkpoint === 'puzzled' || checkpoint === 'annoyed') {
+        this.setSceneFiveBStage('puzzled');
         this.tiger.setCurrentAnimationProgress(0.34);
       } else if (checkpoint === 'tiger' || checkpoint === 'complaint' || checkpoint === 'tiger-complaint') {
         this.setSceneFiveBStage('tiger-complaint');
@@ -4203,11 +4183,11 @@ export class Game {
         this.setSceneFiveBStage('peeking');
         this.tortoise.setCurrentAnimationProgress(0.999);
         this.setSceneFiveBStage('tortoise-reply');
-      } else if (checkpoint === 'scratch' || checkpoint === 'scratching') {
+      } else if (checkpoint === 'considering' || checkpoint === 'scratch' || checkpoint === 'scratching') {
         this.setSceneFiveBStage('peeking');
         this.tortoise.setCurrentAnimationProgress(0.999);
-        this.setSceneFiveBStage('scratching');
-        this.sceneFiveBStageElapsed = SCENE_FIVE_B_SCRATCH_DURATION * 0.5;
+        this.setSceneFiveBStage('considering');
+        this.sceneFiveBStageElapsed = SCENE_FIVE_B_CONSIDER_DURATION * 0.5;
         this.updateSceneFiveB(0);
       } else if (checkpoint === 'question' || checkpoint === 'tiger-question') {
         this.setSceneFiveBStage('peeking');
@@ -4320,7 +4300,8 @@ export class Game {
     const times: Record<string, number> = {
       start: 0,
       peace: 1.2,
-      growl: SCENE_THREE_GROWL_AT + 0.1,
+      growl: SCENE_THREE_CURIOUS_CHIME_AT + 0.1,
+      chime: SCENE_THREE_CURIOUS_CHIME_AT + 0.1,
       approach: 5.3,
       tail: SCENE_THREE_TAIL_AT + 0.2,
       paw: SCENE_THREE_PAW_AT + 0.2,
@@ -4338,6 +4319,7 @@ export class Game {
       start: 'peace',
       peace: 'peace',
       growl: 'peace',
+      chime: 'peace',
       approach: 'approach',
       tail: 'tail',
       paw: 'paw',
@@ -4680,16 +4662,13 @@ export class Game {
           cameraSetup: this.sceneFiveBStage === 'thinking' || this.sceneFiveBStage === 'complete'
             ? 'tortoise-thinking-closeup'
             : this.sceneFiveBStage === 'tiger-complaint'
-              || this.sceneFiveBStage === 'scratching'
+              || this.sceneFiveBStage === 'considering'
               || this.sceneFiveBStage === 'tiger-question'
               ? 'tiger-speaker-medium'
               : 'shell-encounter-two-shot',
           pawContactDistance: this.sceneFivePawContactDistance === undefined
             ? undefined
             : Number(this.sceneFivePawContactDistance.toFixed(3)),
-          biteDistance: this.sceneFiveBBiteDistance === undefined
-            ? undefined
-            : Number(this.sceneFiveBBiteDistance.toFixed(3)),
           tigerShellDistance: Number(this.tiger.group.position.distanceTo(this.tortoise.group.position).toFixed(3)),
           tigerPosition: {
             x: Number(this.tiger.group.position.x.toFixed(2)),

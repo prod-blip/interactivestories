@@ -4,7 +4,6 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 export const TIGER_ANIMATIONS = {
   calmIdle: 'Tiger_Calm_Idle',
   disappointed: 'Tiger_Disappointed_Head_Drop',
-  bite: 'Tiger_Mouth_Open_Bite',
   sniff: 'Tiger_Neck_Bend_Sniff',
   walk: 'Tiger_Simple_Walk',
 } as const;
@@ -47,7 +46,7 @@ export class StoryTiger {
   diagnostics: TigerDiagnostics | undefined;
 
   constructor() {
-    this.group.name = 'HungryTiger';
+    this.group.name = 'StoryTiger';
     this.group.visible = false;
   }
 

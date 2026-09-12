@@ -26,8 +26,7 @@ export type AudioDiagnostics = {
   riverStarted: boolean;
   sniffs: LoadState;
   sniffStarted: boolean;
-  growl: LoadState;
-  growlStarted: boolean;
+  friendlyCueStarted: boolean;
   lastEvent: string;
   lastError: string;
 };
@@ -51,11 +50,6 @@ export class AudioDirector {
   private sniffLoad: Promise<void> | undefined;
   private sniffBuffer: AudioBuffer | undefined;
   private sniffSource: AudioBufferSourceNode | undefined;
-  private angryGrowlDataLoad: Promise<ArrayBuffer | undefined> | undefined;
-  private angryGrowlLoad: Promise<void> | undefined;
-  private angryGrowlBuffer: AudioBuffer | undefined;
-  private angryGrowlSource: AudioBufferSourceNode | undefined;
-  private angryGrowlRequested = false;
   private requested = false;
   private muted = false;
   private volume = 1;
@@ -63,9 +57,8 @@ export class AudioDirector {
   private chirpState: LoadState = 'not-requested';
   private riverState: LoadState = 'not-requested';
   private sniffState: LoadState = 'not-requested';
-  private growlState: LoadState = 'not-requested';
   private sniffStarted = false;
-  private growlStarted = false;
+  private friendlyCueStarted = false;
 
   start(): void {
     this.requested = true;
@@ -90,9 +83,7 @@ export class AudioDirector {
         this.startBirdAmbience(),
         this.startRiverAmbience(),
         this.ensureSniffLoaded(),
-        this.ensureAngryGrowlLoaded(),
       ]);
-      if (this.angryGrowlRequested) void this.playAngryGrowlWhenReady();
     }
   }
 
@@ -141,8 +132,7 @@ export class AudioDirector {
       riverStarted: Boolean(this.riverSource),
       sniffs: this.sniffState,
       sniffStarted: this.sniffStarted,
-      growl: this.growlState,
-      growlStarted: this.growlStarted,
+      friendlyCueStarted: this.friendlyCueStarted,
       lastEvent: session.event,
       lastError: session.error,
     };
@@ -168,36 +158,27 @@ export class AudioDirector {
     this.audioSession.reportEvent('Test tone source started');
   }
 
-  playStomachGrowl(): void {
-    if (!this.context || !this.master || this.context.state !== 'running' || this.muted || this.paused) return;
-    const now = this.context.currentTime;
-    const duration = 1.65;
-    const growlGain = this.context.createGain();
-    const filter = this.context.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(190, now);
-    filter.frequency.exponentialRampToValueAtTime(86, now + duration);
-    growlGain.gain.setValueAtTime(0.0001, now);
-    growlGain.gain.exponentialRampToValueAtTime(0.44, now + 0.16);
-    growlGain.gain.exponentialRampToValueAtTime(0.18, now + 0.82);
-    growlGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    growlGain.connect(this.master);
-
-    for (const [frequency, detune] of [[58, -8], [71, 7], [43, 0]] as const) {
-      const oscillator = this.context.createOscillator();
-      const tremolo = this.context.createGain();
-      oscillator.type = frequency === 43 ? 'sine' : 'sawtooth';
-      oscillator.frequency.setValueAtTime(frequency, now);
-      oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.72, now + duration);
-      oscillator.detune.value = detune;
-      tremolo.gain.setValueAtTime(0.32, now);
-      tremolo.gain.linearRampToValueAtTime(0.12, now + 0.5);
-      tremolo.gain.linearRampToValueAtTime(0.3, now + 1.02);
-      tremolo.gain.linearRampToValueAtTime(0.08, now + duration);
-      oscillator.connect(tremolo).connect(filter).connect(growlGain);
-      oscillator.start(now);
-      oscillator.stop(now + duration);
-    }
+  playCuriousChime(): void {
+    if (!this.canPlay()) return;
+    const context = this.context!;
+    const master = this.master!;
+    const now = context.currentTime;
+    const notes = [392, 523.25, 659.25] as const;
+    notes.forEach((frequency, index) => {
+      const start = now + index * 0.14;
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = index === 2 ? 'sine' : 'triangle';
+      oscillator.frequency.setValueAtTime(frequency, start);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.18, start + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.38);
+      oscillator.connect(gain).connect(master);
+      oscillator.start(start);
+      oscillator.stop(start + 0.4);
+    });
+    this.friendlyCueStarted = true;
+    this.audioSession.reportEvent('Curious chime started');
   }
 
   playHideTap(progress: number): void {
@@ -230,12 +211,6 @@ export class AudioDirector {
   playSniffs(): void {
     if (!this.canPlay()) return;
     void this.playSniffsWhenReady();
-  }
-
-  playAngryGrowl(): void {
-    if (this.muted || this.paused) return;
-    this.angryGrowlRequested = true;
-    void this.playAngryGrowlWhenReady();
   }
 
   playSplash(): void {
@@ -290,11 +265,6 @@ export class AudioDirector {
     this.sniffSource = undefined;
     this.sniffDataLoad = undefined;
     this.sniffBuffer = undefined;
-    this.angryGrowlSource?.stop();
-    this.angryGrowlSource = undefined;
-    this.angryGrowlDataLoad = undefined;
-    this.angryGrowlBuffer = undefined;
-    this.angryGrowlRequested = false;
     void this.context?.close();
     this.context = undefined;
     this.master = undefined;
@@ -326,7 +296,6 @@ export class AudioDirector {
     for (const source of [
       this.riverSource,
       this.sniffSource,
-      this.angryGrowlSource,
     ]) {
       try {
         source?.stop();
@@ -347,16 +316,12 @@ export class AudioDirector {
     this.sniffLoad = undefined;
     this.sniffBuffer = undefined;
     this.sniffSource = undefined;
-    this.angryGrowlLoad = undefined;
-    this.angryGrowlBuffer = undefined;
-    this.angryGrowlSource = undefined;
 
     // The fetched ArrayBuffers are deliberately retained, so rebuilding the
     // graph requires decoding only and does not download the recordings again.
     this.chirpState = this.resetDecodeState(this.chirpState);
     this.riverState = this.resetDecodeState(this.riverState);
     this.sniffState = this.resetDecodeState(this.sniffState);
-    this.growlState = this.resetDecodeState(this.growlState);
   }
 
   private resetDecodeState(state: LoadState): LoadState {
@@ -506,63 +471,6 @@ export class AudioDirector {
     this.sniffSource = source;
   }
 
-  private async ensureAngryGrowlLoaded(): Promise<void> {
-    this.preloadAmbience();
-    const context = this.context;
-    if (!context) return;
-    this.angryGrowlLoad ??= (async () => {
-      try {
-        this.growlState = 'decoding';
-        const recording = await this.angryGrowlDataLoad!;
-        this.angryGrowlBuffer = recording
-          ? await decodeStoryAudioData(context, recording)
-          : undefined;
-        this.growlState = this.angryGrowlBuffer ? 'decoded' : 'failed';
-      } catch (error: unknown) {
-        console.warn('Unable to load angry tiger growl.', error);
-        this.angryGrowlBuffer = undefined;
-        this.growlState = 'failed';
-        this.audioSession.reportError(error);
-      }
-    })();
-    await this.angryGrowlLoad;
-  }
-
-  private async playAngryGrowlWhenReady(): Promise<void> {
-    await this.ensureAngryGrowlLoaded();
-    const context = this.context;
-    const master = this.master;
-    const ambience = this.ambience;
-    if (!this.angryGrowlRequested || !context || !master || !ambience
-      || !this.angryGrowlBuffer || !this.canPlay()) return;
-
-    this.angryGrowlRequested = false;
-    this.angryGrowlSource?.stop();
-    const source = context.createBufferSource();
-    const gain = context.createGain();
-    const now = context.currentTime;
-    const growlEnd = now + this.angryGrowlBuffer.duration;
-    source.buffer = this.angryGrowlBuffer;
-    gain.gain.value = 1.05;
-
-    // Give the one dramatic growl room without altering the player's chosen
-    // master volume. Only the river and birds dip, then return gently.
-    ambience.gain.cancelScheduledValues(now);
-    ambience.gain.setValueAtTime(ambience.gain.value, now);
-    ambience.gain.linearRampToValueAtTime(0.22, now + 0.14);
-    ambience.gain.setValueAtTime(0.22, Math.max(now + 0.14, growlEnd - 0.55));
-    ambience.gain.linearRampToValueAtTime(1, growlEnd + 0.4);
-
-    source.connect(gain).connect(master);
-    source.start(now);
-    this.growlStarted = true;
-    this.audioSession.reportEvent('Growl source started');
-    source.onended = () => {
-      if (this.angryGrowlSource === source) this.angryGrowlSource = undefined;
-    };
-    this.angryGrowlSource = source;
-  }
-
   private preloadAmbience(): void {
     const base = import.meta.env.BASE_URL;
     if (!this.chirpDataLoad) {
@@ -601,18 +509,6 @@ export class AudioDirector {
       }).catch((error: unknown) => {
         console.warn('Unable to preload tiger sniff.', error);
         this.sniffState = 'failed';
-        this.audioSession.reportError(error);
-        return undefined;
-      });
-    }
-    if (!this.angryGrowlDataLoad) {
-      this.growlState = 'fetching';
-      this.angryGrowlDataLoad = fetchStoryAudioData(`${base}audio/tiger-angry-growl.wav`).then((data) => {
-        this.growlState = 'fetched';
-        return data;
-      }).catch((error: unknown) => {
-        console.warn('Unable to preload angry tiger growl.', error);
-        this.growlState = 'failed';
         this.audioSession.reportError(error);
         return undefined;
       });

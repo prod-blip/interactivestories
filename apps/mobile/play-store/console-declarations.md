@@ -55,9 +55,11 @@ location, social features, user-generated content, and personal-data flows.
 - No ads, user interaction, location sharing, or unrestricted web access in the
   current build. It contains one non-consumable purchase.
 - Review all story scenes before answering violence/fear questions. “The
-  Tortoise and the Tiger” contains an animal threat, hiding, growling, and an
-  escape/chase; “The Mouse and the Lion” includes a trapped lion. Declare these
-  honestly as mild or fantasy content wherever the questionnaire asks.
+  Tortoise and the Tiger” now presents the tiger as curious: he gently taps the
+  shell, carries the tortoise, places him in the river, and cheers his swim. It
+  contains no threat, attack, growl, or chase. “The Mouse and the Lion” still
+  includes a trapped lion, so declare any applicable mild or fantasy content
+  honestly wherever the questionnaire asks.
 - Submit the calculated IARC rating; do not select a desired rating first and
   tailor answers to it.
 
