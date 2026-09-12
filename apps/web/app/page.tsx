@@ -63,7 +63,10 @@ export default function Home() {
           </ShelfPurchaseGate>
         </section>
 
-        <p className="library-footer">No ads · No scores · Just a story, shared slowly</p>
+        <p className="library-footer">
+          <span>No ads · No scores · Just a story, shared slowly</span>
+          <Link href="/privacy">Privacy</Link>
+        </p>
       </section>
     </main>
   );
