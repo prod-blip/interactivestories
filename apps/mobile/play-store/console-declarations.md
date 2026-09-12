@@ -7,10 +7,16 @@ checking every answer against the final uploaded artifact and current policy.
 
 - Restricted content: **Yes** — some stories are behind the standard Google Play
   one-time-product paywall.
-- Suggested review instruction: “No account or login is required. Some stories
-  are immediately available. To review the paid content, open any story marked
-  Locked and select Continue to Google Play. Product ID:
-  premium_story_pack_1. Please use Google Play's review/test purchase flow.”
+- Sign-in-details name: **Moonlit Stories reviewer access**
+- Username and password: leave blank.
+- Suggested review instruction: “No account or login is required. From the
+  story shelf, press and hold the circular moon logo in the upper-left corner
+  for two seconds. Enter the reviewer access code supplied below and select
+  Unlock for review. This grants access to the complete story shelf without a
+  purchase.”
+- Append the current private reviewer access code to the instruction in Play
+  Console. Keep the plaintext code out of source control and rotate it if it is
+  disclosed.
 
 ## Ads
 

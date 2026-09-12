@@ -15,6 +15,7 @@ type StoryAccessContextValue = {
   ready: boolean;
   native: boolean;
   owned: boolean;
+  reviewAccessActive: boolean;
   pending: boolean;
   available: boolean;
   price?: string;
@@ -23,7 +24,11 @@ type StoryAccessContextValue = {
   canAccess(storyId: string): boolean;
   purchase(): Promise<BillingStatus>;
   restore(): Promise<BillingStatus>;
+  unlockForReview(code: string): Promise<boolean>;
 };
+
+const REVIEW_ACCESS_STORAGE_KEY = 'moonlit-review-access-v1';
+const REVIEW_ACCESS_CODE_HASH = '8d4eacd9b9c3c0afb3da64a9d2e53a524d30561a7a99bd7a8fcbdd3d74e19e45';
 
 const initialStatus: BillingStatus = {
   productId: 'premium_story_pack_1',
@@ -42,11 +47,18 @@ function errorMessage(error: unknown): string {
   return 'Google Play could not be reached. Please try again.';
 }
 
+async function sha256(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 export function StoryAccessProvider({ children }: { children: React.ReactNode }) {
   const [native, setNative] = useState(false);
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState<BillingStatus>(initialStatus);
   const [purchasing, setPurchasing] = useState(false);
+  const [reviewAccessActive, setReviewAccessActive] = useState(false);
 
   const applyStatus = useCallback((next: BillingStatus) => {
     setStatus(next);
@@ -56,8 +68,14 @@ export function StoryAccessProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     const previewLocked = process.env.NODE_ENV !== 'production' &&
       new URLSearchParams(window.location.search).get('billingPreview') === 'locked';
+
+    const runningNatively = isNativeAndroid();
+    setNative(runningNatively || previewLocked);
+    if (runningNatively || previewLocked) {
+      setReviewAccessActive(localStorage.getItem(REVIEW_ACCESS_STORAGE_KEY) === 'granted');
+    }
+
     if (previewLocked) {
-      setNative(true);
       applyStatus({
         productId: 'premium_story_pack_1',
         owned: false,
@@ -68,9 +86,6 @@ export function StoryAccessProvider({ children }: { children: React.ReactNode })
       });
       return;
     }
-
-    const runningNatively = isNativeAndroid();
-    setNative(runningNatively);
 
     let active = true;
     let removeListener: (() => Promise<void>) | undefined;
@@ -132,21 +147,35 @@ export function StoryAccessProvider({ children }: { children: React.ReactNode })
     }
   }, [applyStatus]);
 
+  const unlockForReview = useCallback(async (code: string) => {
+    if (!native) return false;
+    const digest = await sha256(code.trim().toLowerCase());
+    if (digest !== REVIEW_ACCESS_CODE_HASH) return false;
+
+    localStorage.setItem(REVIEW_ACCESS_STORAGE_KEY, 'granted');
+    setReviewAccessActive(true);
+    return true;
+  }, [native]);
+
+  const owned = status.owned || reviewAccessActive;
+
   const value = useMemo<StoryAccessContextValue>(() => ({
     ready,
     native,
-    owned: status.owned,
+    owned,
+    reviewAccessActive,
     pending: status.pending,
     available: status.available,
     price: status.price,
     message: status.message,
     purchasing,
     canAccess(storyId) {
-      return !native || !isPremiumStory(storyId) || status.owned;
+      return !native || !isPremiumStory(storyId) || owned;
     },
     purchase,
     restore,
-  }), [native, purchase, purchasing, ready, restore, status]);
+    unlockForReview,
+  }), [native, owned, purchase, purchasing, ready, restore, reviewAccessActive, status, unlockForReview]);
 
   return <StoryAccessContext.Provider value={value}>{children}</StoryAccessContext.Provider>;
 }

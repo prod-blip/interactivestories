@@ -361,6 +361,26 @@ footer { padding: 45px 0; border-top: 1px solid var(--line); background: #0c101d
 }
 .purchase-cancel { min-height: 38px; }
 .purchase-feedback { margin: 14px 0 0 !important; color: #e6d99f !important; font-size: 12px !important; }
+.reviewer-access-backdrop { z-index: 1100; }
+.reviewer-access-form { display: grid; gap: 12px; margin-top: 24px; }
+.reviewer-access-form label { color: #b9bbc4; font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+.reviewer-access-form input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 15px;
+  border: 1px solid rgba(232, 220, 174, .24);
+  border-radius: 12px;
+  outline: none;
+  background: rgba(4, 7, 15, .62);
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 16px;
+  letter-spacing: .08em;
+}
+.reviewer-access-form input:focus { border-color: rgba(232, 220, 174, .58); box-shadow: 0 0 0 3px rgba(232, 220, 174, .08); }
+.reviewer-access-form .primary-button { width: 100%; border: 0; cursor: pointer; }
+.reviewer-access-error { margin: -2px 0 0 !important; color: #e8aaa0 !important; font-size: 11px !important; }
+.native-app .brand { -webkit-user-select: none; user-select: none; }
 .spin { animation: access-spin .9s linear infinite; }
 @keyframes access-spin { to { transform: rotate(360deg); } }
 
