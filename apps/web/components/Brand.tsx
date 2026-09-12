@@ -20,7 +20,18 @@ export function Brand() {
   }
 
   function beginLongPress(event: PointerEvent<HTMLAnchorElement>) {
-    if (!access.native || access.owned || event.button !== 0) return;
+    if (!access.native || access.owned) return;
+    if (event.pointerType !== 'touch' && event.button !== 0) return;
+
+    // Android WebView can cancel a pointer when its native long-press handling
+    // takes over. Prevent that default gesture and keep our timer alive for
+    // touch pointers even if WebView still emits pointercancel.
+    if (event.pointerType === 'touch') event.preventDefault();
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Pointer capture is an enhancement; the timer still works without it.
+    }
     cancelLongPress();
     longPressTimer.current = window.setTimeout(() => {
       suppressNextClick.current = true;
@@ -39,8 +50,12 @@ export function Brand() {
         aria-label="Moonlit Stories home"
         onPointerDown={beginLongPress}
         onPointerUp={cancelLongPress}
-        onPointerCancel={cancelLongPress}
-        onPointerLeave={cancelLongPress}
+        onPointerCancel={(event) => {
+          if (event.pointerType !== 'touch') cancelLongPress();
+        }}
+        onPointerLeave={(event) => {
+          if (event.pointerType !== 'touch') cancelLongPress();
+        }}
         onContextMenu={(event) => {
           if (access.native) event.preventDefault();
         }}

@@ -380,7 +380,12 @@ footer { padding: 45px 0; border-top: 1px solid var(--line); background: #0c101d
 .reviewer-access-form input:focus { border-color: rgba(232, 220, 174, .58); box-shadow: 0 0 0 3px rgba(232, 220, 174, .08); }
 .reviewer-access-form .primary-button { width: 100%; border: 0; cursor: pointer; }
 .reviewer-access-error { margin: -2px 0 0 !important; color: #e8aaa0 !important; font-size: 11px !important; }
-.native-app .brand { -webkit-user-select: none; user-select: none; }
+.native-app .brand {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+}
 .spin { animation: access-spin .9s linear infinite; }
 @keyframes access-spin { to { transform: rotate(360deg); } }
 
