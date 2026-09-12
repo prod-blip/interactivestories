@@ -201,17 +201,17 @@ const SCENE_THREE_STRIPES_AT = 10.1;
 const SCENE_THREE_FACE_AT = 11.65;
 const SCENE_THREE_HUNGRY_AT = 13.2;
 const SCENE_THREE_TIGER_ANIMATION_SPEED = 0.8;
-const SCENE_THREE_HUNGRY = 'Ohhh... what a lovely day!';
-const SCENE_THREE_SNIFF = 'Sniff... sniff...\n\nWho is walking by?';
-const SCENE_THREE_LUNCH = 'Aha!\n\nA little traveller!';
+const SCENE_THREE_HUNGRY = 'Mmm... I was beginning to feel rather hungry.';
+const SCENE_THREE_SNIFF = 'Sniff... sniff...\n\nWhat is that?';
+const SCENE_THREE_LUNCH = 'Aha...\n\nA little traveller.';
 const SCENE_FOUR_APPROACH_DURATION = 5.2;
 const SCENE_FOUR_TORTOISE_WALK_DURATION = 0.9;
 const SCENE_FOUR_CIRCLE_DURATION = 5.4;
 const SCENE_FOUR_TIGER_GROUND_Y = 0;
-const SCENE_FOUR_NARRATION = 'A curious tiger stepped out of the bushes to say hello.';
-const SCENE_FOUR_TIGER_GREETING = 'Hello there!\n\nWho have we here?';
-const SCENE_FOUR_TORTOISE_REPLY = 'Hello, Tiger.\n\nI am Tortoise.';
-const SCENE_FOUR_TIGER_SNACK = 'What a strong and shiny shell you have!';
+const SCENE_FOUR_NARRATION = 'A tiger stepped out of the bushes and watched the little tortoise very closely.';
+const SCENE_FOUR_TIGER_GREETING = 'Well, well...\n\nWhat have we here?';
+const SCENE_FOUR_TORTOISE_REPLY = 'Hello, Tiger...\n\nI think I know that look.';
+const SCENE_FOUR_TIGER_SNACK = 'You arrived just when I was feeling rather... hungry.';
 const SCENE_FIVE_REQUIRED_TAPS = 6;
 const SCENE_FIVE_TUCK_DURATION = 2.35;
 const SCENE_FIVE_SURPRISE_DURATION = 0.9;
@@ -223,7 +223,7 @@ const SCENE_FIVE_RETREAT_DURATION = 2;
 const SCENE_FIVE_RETREAT_DISTANCE = 1.35;
 const SCENE_FIVE_DISAPPOINTED_DURATION = 3.9;
 const SCENE_FIVE_TORTOISE_Z = 7.28;
-const SCENE_FIVE_OBJECTIVE = 'Show Tiger how your shell works!';
+const SCENE_FIVE_OBJECTIVE = 'Quick! Tuck into your shell!';
 const SCENE_FIVE_B_APPROACH_DURATION = 2.3;
 const SCENE_FIVE_B_PUSH_DURATION = 1.8;
 const SCENE_FIVE_B_SECOND_PUSH_DURATION = 3.15;
@@ -232,23 +232,23 @@ const SCENE_FIVE_B_PEEK_DURATION = 2.4;
 const SCENE_FIVE_B_CONSIDER_DURATION = 1.7;
 const SCENE_FIVE_B_REST_DISTANCE = 3.55;
 const SCENE_FIVE_B_THINK_DURATION = 3.2;
-const SCENE_FIVE_B_NARRATION = 'The tiger gently tapped and pushed the shell...\n\nbut it stayed strong and steady.';
-const SCENE_FIVE_B_TIGER_COMPLAINT = 'Your shell is as strong as a rock!';
-const SCENE_FIVE_B_TORTOISE_REPLY = 'Yes.\n\nIt keeps me snug wherever I go.';
-const SCENE_FIVE_B_TIGER_QUESTION = 'How does your shell stay so strong?';
+const SCENE_FIVE_B_NARRATION = 'The tiger tapped and gently pushed the shell...\n\nbut it did not budge.';
+const SCENE_FIVE_B_TIGER_COMPLAINT = 'Hmm...\n\nHarder than it looks.';
+const SCENE_FIVE_B_TORTOISE_REPLY = 'My shell can be rather troublesome.';
+const SCENE_FIVE_B_TIGER_QUESTION = 'And how does such a hard shell ever become soft?';
 const SCENE_SIX_PAUSE_DURATION = 0.85;
 const SCENE_SIX_THINK_DURATION = 3.5;
-const SCENE_SIX_NARRATION = 'Then the clever tortoise had an idea for a little adventure.';
-const SCENE_SIX_TORTOISE_WAY = 'Hmm...\n\nWould you like to see?';
-const SCENE_SIX_TIGER_INTEREST = 'Oh yes!\n\nShow me!';
-const SCENE_SIX_TORTOISE_SUN = 'The warm sun helps my shell stay strong.';
-const SCENE_SIX_TORTOISE_RIVER = 'And cool river water makes it sparkle.\n\nShall we go there?';
+const SCENE_SIX_NARRATION = 'Then the clever tortoise had an idea.';
+const SCENE_SIX_TORTOISE_WAY = 'There may be one way.';
+const SCENE_SIX_TIGER_INTEREST = 'One way?\n\nTell me.';
+const SCENE_SIX_TORTOISE_SUN = 'The warm sun makes my shell hard.';
+const SCENE_SIX_TORTOISE_RIVER = 'But river water makes it soft.';
 const SCENE_SEVEN_LAUGH_DURATION = 1.4;
 const SCENE_SEVEN_CAMERA_SETUP_DURATION = 1.35;
 const SCENE_SEVEN_PICKUP_DURATION = 3.6;
 const SCENE_SEVEN_REVEAL_DURATION = 1.35;
-const SCENE_SEVEN_TIGER_PROUD = 'What a wonderful idea!\n\nI can help you get there.';
-const SCENE_SEVEN_TORTOISE_FLATTER = 'Thank you, Tiger.\n\nThat is very kind.';
+const SCENE_SEVEN_TIGER_PROUD = 'Does it now?\n\nThen perhaps we should visit the river.';
+const SCENE_SEVEN_TORTOISE_FLATTER = 'Oh yes.\n\nVery clever of you.';
 const SCENE_SEVEN_NARRATION = 'The tiger carefully lifted the tortoise and carried him towards the river.';
 const SCENE_EIGHT_DURATION = 10.4;
 const SCENE_EIGHT_TIGER_SOFT_AT = 0.9;
@@ -257,14 +257,14 @@ const SCENE_EIGHT_TORTOISE_CLOSE_AT = 6.05;
 const SCENE_EIGHT_ARRIVING_AT = 8.65;
 const SCENE_EIGHT_TORTOISE_PEEK_PROGRESS = 0.78;
 const SCENE_EIGHT_TORTOISE_PEEK_SPEED = 1.02;
-const SCENE_EIGHT_TIGER_SOFT = 'The river is just ahead!';
-const SCENE_EIGHT_TIGER_PROUD = 'What a lovely adventure this is!';
+const SCENE_EIGHT_TIGER_SOFT = 'Soon we shall find out whether your story is true.';
+const SCENE_EIGHT_TIGER_PROUD = 'What a clever tiger I am!';
 const SCENE_EIGHT_TORTOISE_CLOSE = 'Just a little closer...';
 const SCENE_NINE_TIGER_ARRIVAL = 'Here we are!\n\nI will set you down gently.';
 const SCENE_NINE_TORTOISE_DEEP = 'Please place me where the water is deep enough to swim.';
-const SCENE_NINE_TIGER_QUESTION = 'Ready for a swim?';
-const SCENE_NINE_TORTOISE_EXPLAIN = 'Oh yes!\n\nThis is where I can show you what I do best.';
-const SCENE_NINE_TIGER_AGREES = 'Then into the river we go!';
+const SCENE_NINE_TIGER_QUESTION = 'The deep water?';
+const SCENE_NINE_TORTOISE_EXPLAIN = 'Oh yes.\n\nThat is the only way to soften my shell.';
+const SCENE_NINE_TIGER_AGREES = 'Then deep water it is.';
 const SCENE_TEN_SETTLE_DURATION = 0.85;
 const SCENE_TEN_BACKSWING_DURATION = 1.45;
 const SCENE_TEN_FORWARD_SWING_DURATION = 1.25;
@@ -286,38 +286,38 @@ const SCENE_ELEVEN_SWIM_Y = -0.29;
 const SCENE_ELEVEN_SAFE_OBJECTIVE_DURATION = 1.8;
 const SCENE_ELEVEN_SAFE_ARRIVAL_DURATION = 0.8;
 const SCENE_ELEVEN_TIGER_LOOK_BACK_DURATION = 2.85;
-const SCENE_ELEVEN_TIGER_WONDERS = 'Hmm...\n\nWhere did he go?';
+const SCENE_ELEVEN_TIGER_WONDERS = 'Hmm...\n\nIs he soft yet?';
 const SCENE_ELEVEN_TORTOISE_THANKS = 'Thank you, Tiger!';
-const SCENE_ELEVEN_TIGER_QUESTION = 'For what?';
-const SCENE_ELEVEN_TORTOISE_ESCAPE = 'For helping me reach my favourite river!';
+const SCENE_ELEVEN_TIGER_QUESTION = 'Thank me?';
+const SCENE_ELEVEN_TORTOISE_ESCAPE = 'You brought me exactly where I wanted to go.';
 const SCENE_ELEVEN_OBJECTIVE = 'Swim along the river!';
 const SCENE_ELEVEN_SPEECH = [
   'The water feels wonderful!',
   'Around the lilies!',
-  'What a lovely swim!',
+  'Keep swimming!',
   'Nearly there!',
 ] as const;
 const SCENE_ELEVEN_SPEECH_PROGRESS = [0.12, 0.36, 0.61, 0.84] as const;
 const SCENE_ELEVEN_SAFE_OBJECTIVE = 'Reach the sunny riverbank!';
 const SCENE_ELEVEN_TIGER_SAFE_SPEECH = [
-  'What a wonderful swimmer!',
-  'Look how fast he goes!',
-  'Well done, Tortoise!',
+  'Wait... that was not the plan!',
+  'How can he swim so fast?',
+  'You clever little tortoise!',
 ] as const;
 const SCENE_ELEVEN_TIGER_SAFE_PROGRESS = [0.08, 0.38, 0.68] as const;
-const SCENE_ELEVEN_SAFE_NARRATION = 'The clever tortoise reached the sunny riverbank, while the tiger watched in amazement.';
+const SCENE_ELEVEN_SAFE_NARRATION = 'The clever tortoise reached the sunny riverbank, while the tiger watched and realised what had happened.';
 const SCENE_THIRTEEN_CLIMB_DURATION = 2.45;
 const SCENE_THIRTEEN_SHAKE_DURATION = 1.55;
 const SCENE_THIRTEEN_BRAIN_PAUSE_DURATION = 0.72;
 const SCENE_THIRTEEN_CONFUSED_DURATION = 1.15;
 const SCENE_THIRTEEN_CHUCKLE_DURATION = 1.85;
-const SCENE_THIRTEEN_TIGER_ACCUSES = 'That was a clever idea!';
+const SCENE_THIRTEEN_TIGER_ACCUSES = 'You clever little tortoise!';
 const SCENE_THIRTEEN_TORTOISE_STRENGTH = 'I may be small and slow...';
 const SCENE_THIRTEEN_TORTOISE_BRAIN = 'But thoughtful ideas can be very strong!';
-const SCENE_THIRTEEN_TIGER_REFLECTS = 'I will remember that.\n\nWell done, Tortoise!';
+const SCENE_THIRTEEN_TIGER_REFLECTS = 'I will remember that next time.';
 const SCENE_FOURTEEN_NARRATOR_DELAY = 1.35;
 const SCENE_FOURTEEN_PULL_DURATION = 11.5;
-const SCENE_FOURTEEN_NARRATION = 'And so the tortoise and the tiger shared a wonderful adventure...\n\nall because the tortoise stopped, thought carefully and used his clever mind.';
+const SCENE_FOURTEEN_NARRATION = 'And so the little tortoise escaped the mighty tiger...\n\nnot because he was stronger, but because he stopped, thought carefully and used his clever mind.';
 const STORY_SCENE_ORDER: readonly StorySceneId[] = [
   'scene-1',
   'scene-2',

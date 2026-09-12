@@ -37,7 +37,7 @@ canvas {
   z-index: 90;
   top: max(16px, env(safe-area-inset-top));
   left: max(16px, env(safe-area-inset-left));
-  right: max(16px, env(safe-area-inset-right));
+  right: max(66px, calc(var(--story-safe-right, env(safe-area-inset-right, 0px)) + 56px));
   display: grid;
   gap: 6px;
   pointer-events: none;
@@ -820,7 +820,7 @@ canvas {
   .hud {
     top: max(8px, env(safe-area-inset-top));
     left: max(10px, env(safe-area-inset-left));
-    right: max(10px, env(safe-area-inset-right));
+    right: max(62px, calc(var(--story-safe-right, env(safe-area-inset-right, 0px)) + 54px));
   }
 
   .hud__title {

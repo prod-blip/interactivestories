@@ -11,6 +11,7 @@ export class ShellHideUI {
   private readonly secondarySpeaker = document.createElement('strong');
   private readonly secondaryText = document.createElement('span');
   private tapHandler: (() => void) | undefined;
+  private secondaryDialogueTimer = 0;
   private total = 1;
 
   constructor(parent: HTMLElement, private readonly onInteract: () => void) {
@@ -102,28 +103,35 @@ export class ShellHideUI {
     this.button.blur();
   }
 
-  showSecondaryDialogue(speaker: string, text: string): void {
+  showSecondaryDialogue(speaker: string, text: string, duration = 2400): void {
+    this.clearSecondaryDialogueTimer();
     this.secondaryDialogue.classList.remove('is-sound-effect', 'is-ambient-effect');
     this.secondarySpeaker.textContent = speaker;
     this.secondaryText.textContent = text;
     this.secondaryDialogue.classList.add('is-visible');
+    this.scheduleSecondaryDialogueHide(duration);
   }
 
   showSoundEffect(text: string): void {
+    this.clearSecondaryDialogueTimer();
     this.secondarySpeaker.textContent = '';
     this.secondaryText.textContent = text;
     this.secondaryDialogue.classList.remove('is-sound-effect', 'is-ambient-effect');
     this.secondaryDialogue.classList.add('is-sound-effect', 'is-visible');
+    this.scheduleSecondaryDialogueHide(1300);
   }
 
   showAmbientEffect(text: string): void {
+    this.clearSecondaryDialogueTimer();
     this.secondarySpeaker.textContent = '';
     this.secondaryText.textContent = text;
     this.secondaryDialogue.classList.remove('is-sound-effect');
     this.secondaryDialogue.classList.add('is-ambient-effect', 'is-visible');
+    this.scheduleSecondaryDialogueHide(1100);
   }
 
   hideSecondaryDialogue(): void {
+    this.clearSecondaryDialogueTimer();
     this.secondaryDialogue.classList.remove('is-visible', 'is-sound-effect', 'is-ambient-effect');
   }
 
@@ -138,11 +146,25 @@ export class ShellHideUI {
   }
 
   dispose(): void {
+    this.clearSecondaryDialogueTimer();
     this.button.removeEventListener('pointerdown', this.handlePointerDown);
     window.removeEventListener('keydown', this.handleKeyDown);
     this.objective.remove();
     this.action.remove();
     this.secondaryDialogue.remove();
+  }
+
+  private scheduleSecondaryDialogueHide(duration: number): void {
+    this.secondaryDialogueTimer = window.setTimeout(() => {
+      this.secondaryDialogueTimer = 0;
+      this.secondaryDialogue.classList.remove('is-visible', 'is-sound-effect', 'is-ambient-effect');
+    }, duration);
+  }
+
+  private clearSecondaryDialogueTimer(): void {
+    if (!this.secondaryDialogueTimer) return;
+    window.clearTimeout(this.secondaryDialogueTimer);
+    this.secondaryDialogueTimer = 0;
   }
 
   private activate(): void {

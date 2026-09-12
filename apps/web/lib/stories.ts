@@ -102,13 +102,13 @@ export const stories: Story[] = [
     slug: 'tortoise-and-tiger',
     title: 'The Tortoise and the Tiger',
     eyebrow: 'A clever riverside fable',
-    summary: 'A small tortoise shows a curious tiger how thoughtful ideas can begin a wonderful adventure.',
+    summary: 'A small tortoise discovers that a calm mind can outwit even the mightiest tiger.',
     description:
-      'Walk beside a peaceful jungle river, demonstrate the tortoise’s sturdy shell, and guide him through a cheerful swim while his new friend watches in amazement.',
-    moral: 'A thoughtful idea can turn an unexpected meeting into friendship.',
+      'Walk beside a peaceful jungle river, tuck safely into a sturdy shell, and help the clever tortoise turn a tense encounter into a daring escape.',
+    moral: 'A calm mind can be stronger than force.',
     ageRange: 'Ages 4–8',
     duration: '10–12 min',
-    participation: 'Read aloud + explore together',
+    participation: 'Read aloud + help the tortoise',
     entry: '/games/tortoise-and-tiger/index.html',
     playable: true,
     runtimeVersion: 1,
@@ -119,8 +119,8 @@ export const stories: Story[] = [
     },
     guidance: [
       { title: 'Read together', text: 'Pause with each passage and wonder what the tortoise might be thinking.' },
-      { title: 'Help gently', text: 'Demonstrate the shell, then guide the tortoise through the river at an unhurried pace.' },
-      { title: 'Notice calm thinking', text: 'Talk about how one thoughtful idea helped the two animals share an adventure.' },
+      { title: 'Help at key moments', text: 'Tuck into the shell, then guide the tortoise through the river to the sunny bank.' },
+      { title: 'Notice calm thinking', text: 'Talk about how the tortoise stays calm, understands the danger, and finds a clever way home.' },
     ],
   },
 ];

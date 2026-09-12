@@ -346,7 +346,7 @@ canvas {
 .race-guide {
   position: fixed;
   top: max(22px, calc(var(--safe-top) + 12px));
-  right: max(22px, calc(var(--safe-right) + 14px));
+  right: max(66px, calc(var(--safe-right) + 56px));
   z-index: 114;
   display: flex;
   align-items: center;
@@ -662,7 +662,7 @@ html[data-story-input="touch"] .objective-popup {
 
 html[data-story-input="touch"] .race-guide {
   top: max(10px, calc(var(--safe-top) + 8px));
-  right: max(10px, calc(var(--safe-right) + 8px));
+  right: max(62px, calc(var(--safe-right) + 54px));
 }
 
 html[data-story-input="touch"] .gameplay-bubble {
@@ -700,7 +700,7 @@ html[data-story-input="touch"] .gameplay-bubble {
   .gameplay-bubble span { font-size: clamp(14px, 4vw, 17px); line-height: 1.28; }
   .race-guide {
     top: max(8px, calc(var(--safe-top) + 7px));
-    right: max(8px, calc(var(--safe-right) + 7px));
+    right: max(62px, calc(var(--safe-right) + 54px));
     width: min(184px, calc(100vw - 16px));
     gap: 8px;
     padding: 6px 10px 6px 6px;
@@ -762,7 +762,7 @@ html[data-story-input="touch"] .gameplay-bubble {
   .gameplay-bubble.is-narrator-line.is-visible { transform: translate(-50%, 0) scale(1); }
   .race-guide {
     top: max(7px, var(--safe-top));
-    right: max(8px, var(--safe-right));
+    right: max(62px, calc(var(--safe-right) + 54px));
     width: min(178px, 38vw);
   }
   .objective-popup {
